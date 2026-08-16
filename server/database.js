@@ -1,0 +1,337 @@
+const fs = require('fs');
+const path = require('path');
+
+const DB_FILE = path.join(__dirname, 'data.json');
+
+// Default initial seeded dataset tailored to Akanksha's profile & requirements
+const defaultData = {
+  settings: {
+    name: "Akanksha",
+    title: "Visual Artist & Creative Writer",
+    institution: "Hindu College, University of Delhi",
+    email: "akankshachandreshwar@gmail.com",
+    phone: "9517155681",
+    instagramPrimary: "@_akanxha",
+    instagramSecondary: "@psychotichic",
+    bioQuote: "A young artist driven by the desire to create a colourful canvas of life. I welcome you to my little corner, where you can explore my work, discover the stories woven into every creation, and become a part of this ever-evolving journey of expression.",
+    bioSubtitle: "Exploring the delicate intersection of emotion, raw pigment, poetry, and transient human connection across Delhi & beyond.",
+    artistImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80",
+    announcement: "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping on Art Prints Across India ✨",
+    adminPin: "1234",
+    upiId: "9517155681@okaxis"
+  },
+  artworks: [
+    {
+      id: "art-1",
+      title: "Whispers of North Campus",
+      category: "Canvas Paintings",
+      medium: "Acrylic & Gold Leaf on Canvas",
+      dimensions: "24 x 36 inches",
+      year: "2024",
+      price: 14500,
+      image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80",
+      description: "An emotional exploration of quiet afternoons amidst historic brick arches, warm sunlight, and student dreams under Delhi skies.",
+      isSold: false,
+      isFeatured: true
+    },
+    {
+      id: "art-2",
+      title: "Ephemeral Blush & Gold",
+      category: "Canvas Paintings",
+      medium: "Oil & Impasto Texture",
+      dimensions: "30 x 40 inches",
+      year: "2024",
+      price: 18900,
+      image: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1000&q=80",
+      description: "Layered rose quartz hues and warm terracotta tones symbolizing self-discovery and feminine vulnerability.",
+      isSold: false,
+      isFeatured: true
+    },
+    {
+      id: "art-3",
+      title: "Symphony of Solitude",
+      category: "Mixed Media",
+      medium: "Watercolor, Charcoal & Pressed Flora",
+      dimensions: "18 x 24 inches",
+      year: "2023",
+      price: 9800,
+      image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1000&q=80",
+      description: "Raw ink strokes meeting delicate botanicals, capturing the poetry of contemplative stillness.",
+      isSold: false,
+      isFeatured: true
+    },
+    {
+      id: "art-4",
+      title: "Dusk over Yamuna Ghaat",
+      category: "Canvas Paintings",
+      medium: "Oil on Linen Canvas",
+      dimensions: "20 x 30 inches",
+      year: "2024",
+      price: 16200,
+      image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1000&q=80",
+      description: "Atmospheric twilight captured with deep magenta and warm saffron reflections dancing on rippling waters.",
+      isSold: true,
+      isFeatured: false
+    },
+    {
+      id: "art-5",
+      title: "Chasing Petals in the Wind",
+      category: "Sketches & Inks",
+      medium: "Archival Ink & Gouache on Khadi Paper",
+      dimensions: "12 x 16 inches",
+      year: "2024",
+      price: 5400,
+      image: "https://images.unsplash.com/photo-1582561075258-0056637494ee?auto=format&fit=crop&w=1000&q=80",
+      description: "Fine line contour sketch inspired by autumn morning breezes in the university lawns.",
+      isSold: false,
+      isFeatured: false
+    },
+    {
+      id: "art-6",
+      title: "The Melancholy Muse",
+      category: "Digital Art",
+      medium: "Limited Edition Fine-Art Archival Print",
+      dimensions: "16 x 20 inches",
+      year: "2024",
+      price: 3800,
+      image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=1000&q=80",
+      description: "A digital renaissance portrait experimenting with soft neon pink lighting and floral surrealism.",
+      isSold: false,
+      isFeatured: false
+    }
+  ],
+  products: [
+    {
+      id: "prod-1",
+      title: "Hand-Painted 'Flora & Soul' Canvas Tote",
+      category: "Wearable Art",
+      price: 1299,
+      originalPrice: 1699,
+      stock: 8,
+      image: "https://images.unsplash.com/photo-1597633425046-08f5110420b5?auto=format&fit=crop&w=800&q=80",
+      description: "100% Organic heavyweight cotton tote individually hand-painted with acrylic fabric medium and sealed for durability.",
+      tag: "Bestseller",
+      rating: 4.9
+    },
+    {
+      id: "prod-2",
+      title: "Custom Painted Vintage Denim Jacket",
+      category: "Fashion Artifacts",
+      price: 3499,
+      originalPrice: 4200,
+      stock: 3,
+      image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80",
+      description: "One-of-a-kind upcycled denim jacket featuring custom botanical and celestial artwork on back panel. Made to order.",
+      tag: "Limited Edition",
+      rating: 5.0
+    },
+    {
+      id: "prod-3",
+      title: "Chronicles of Blush & Ink - Poetry Zine (Vol. I)",
+      category: "Poetry Books",
+      price: 499,
+      originalPrice: 650,
+      stock: 25,
+      image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
+      description: "An intimate 48-page softcover collection of poems, handwritten notes, and original ink illustrations.",
+      tag: "Artist Book",
+      rating: 4.9
+    },
+    {
+      id: "prod-4",
+      title: "Botanical Gold Foil Bookmark Set (Pack of 4)",
+      category: "Artifacts",
+      price: 349,
+      originalPrice: 450,
+      stock: 40,
+      image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80",
+      description: "Heavyweight 350 GSM cotton paper bookmarks embellished with rose gold metallic foil and silk tassels.",
+      tag: "Popular",
+      rating: 4.8
+    },
+    {
+      id: "prod-5",
+      title: "Fine Art Giclée Print: 'Ephemeral Blush'",
+      category: "Art Prints",
+      price: 1199,
+      originalPrice: 1499,
+      stock: 15,
+      image: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80",
+      description: "Museum-grade pigment print on 310 GSM Hahnemühle textured cotton paper, hand-signed and numbered by Akanksha.",
+      tag: "Collector Print",
+      rating: 5.0
+    },
+    {
+      id: "prod-6",
+      title: "Artisan Ceramic Palette & Brush Rest Set",
+      category: "Artifacts",
+      price: 899,
+      originalPrice: 1199,
+      stock: 6,
+      image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80",
+      description: "Handcrafted ceramic mixing palette with soft pink glaze and a sculpted floral brush rest.",
+      tag: "Handmade",
+      rating: 4.9
+    }
+  ],
+  bookings: [
+    {
+      id: "BK-8841",
+      clientName: "Meera Sen",
+      clientEmail: "meera.sen@gmail.com",
+      clientPhone: "9810234567",
+      eventType: "College Fest / Cultural Event",
+      eventDate: "2026-08-25",
+      timeSlot: "Afternoon (2:00 PM - 5:00 PM)",
+      guestCount: 30,
+      location: "North Campus, Delhi University",
+      notes: "Face painting booth for Mecca Fest with neon glitter and botanical eye art.",
+      status: "Confirmed",
+      estimatedAmount: 4500,
+      createdAt: "2026-08-14T10:30:00Z"
+    },
+    {
+      id: "BK-8842",
+      clientName: "Rhea Kapoor",
+      clientEmail: "rhea.k@fashionstudio.in",
+      clientPhone: "9876543210",
+      eventType: "Editorial / Fashion Photoshoot",
+      eventDate: "2026-08-28",
+      timeSlot: "Morning (10:00 AM - 1:00 PM)",
+      guestCount: 4,
+      location: "Hauz Khas Village Studio, New Delhi",
+      notes: "Ethereal pastel face art and delicate butterfly motifs for an autumn lookbook shoot.",
+      status: "Pending",
+      estimatedAmount: 3800,
+      createdAt: "2026-08-15T16:20:00Z"
+    }
+  ],
+  poems: [
+    {
+      id: "poem-1",
+      title: "Between Two Brushstrokes",
+      date: "August 2024",
+      excerpt: "I spilled a drop of morning rose upon the virgin linen, and watched the silence turn into a song...",
+      fullText: "I spilled a drop of morning rose\nupon the virgin linen,\nand watched the silence turn into a song.\n\nWe are all fragments of unfinished canvases,\nsearching for the shade of terracotta\nthat feels like coming home.\n\nUnder the shade of ancient college trees,\nwe paint what words dare not confess,\nand let the wet pigment hold our quiet breath.",
+      book: "Chronicles of Blush & Ink",
+      theme: "Introspection"
+    },
+    {
+      id: "poem-2",
+      title: "Verses in the Library Hall",
+      date: "June 2024",
+      excerpt: "Old leather bindings smell of rain and centuries of longing. I left a poem between pages forty and four...",
+      fullText: "Old leather bindings smell of rain\nand centuries of longing.\nI left a poem between pages forty and four,\nhoping someone with paint-stained fingers\nmight find it when the monsoon arrives.\n\nYou do not simply read art;\nyou allow it to undress your guarded thoughts\nand leave them luminous in the dark.",
+      book: "Chronicles of Blush & Ink",
+      theme: "College Chronicles"
+    },
+    {
+      id: "poem-3",
+      title: "The Anatomy of a Sunrise",
+      date: "May 2024",
+      excerpt: "Crimson first, then whisper-pink, then all the world is gold...",
+      fullText: "Crimson first, then whisper-pink,\nthen all the world is gold.\n\nEvery daybreak is a masterwork\nno painter can ever own,\nyet we spend our lives with wet palettes,\ntrying to capture just one heartbeat of its grace.",
+      book: "Unpublished Musings",
+      theme: "Nature & Light"
+    }
+  ],
+  reviews: [
+    {
+      id: "rev-1",
+      name: "Tanya Malhotra",
+      role: "Art Collector & DU Alum",
+      rating: 5,
+      comment: "Purchased 'Whispers of North Campus' and it sits proudly in my living room. The textures and blush earthy tones bring so much warmth and nostalgia. Akanksha is an exceptionally gifted artist!",
+      date: "August 2024",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+      verified: true,
+      approved: true
+    },
+    {
+      id: "rev-2",
+      name: "Kavya Singhania",
+      role: "Hindu College Fest Convener",
+      rating: 5,
+      comment: "Akanksha was the star of our cultural fest face painting arena! The queues were endless because her designs were literally wearable masterpieces. Highly professional and so charming.",
+      date: "July 2024",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      verified: true,
+      approved: true
+    },
+    {
+      id: "rev-3",
+      name: "Arjun Verma",
+      role: "Poetry Reader & Book Lover",
+      rating: 5,
+      comment: "The hand-painted tote bag and poetry zine arrived in gorgeous blush packaging with a handwritten wax-sealed note. The care and artistic soul put into every single item is magical.",
+      date: "June 2024",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      verified: true,
+      approved: true
+    },
+    {
+      id: "rev-4",
+      name: "Simran Kohli",
+      role: "Fashion Stylist",
+      rating: 5,
+      comment: "Booked Akanksha for an editorial photoshoot. Her body painting & intricate eye motifs elevated our entire lookbook. Will definitely collaborate again!",
+      date: "August 2024",
+      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
+      verified: true,
+      approved: true
+    }
+  ],
+  orders: [
+    {
+      id: "ORD-9201",
+      customerName: "Sneha Roy",
+      email: "sneha.roy@gmail.com",
+      phone: "9823145678",
+      address: "B-402, Green Park Extension, New Delhi - 110016",
+      items: [
+        { id: "prod-1", title: "Hand-Painted 'Flora & Soul' Canvas Tote", price: 1299, quantity: 1 },
+        { id: "prod-4", title: "Botanical Gold Foil Bookmark Set (Pack of 4)", price: 349, quantity: 1 }
+      ],
+      totalAmount: 1648,
+      paymentMethod: "UPI (Google Pay / PhonePe)",
+      status: "Shipped",
+      createdAt: "2026-08-15T11:45:00Z"
+    }
+  ]
+};
+
+// Ensure database file exists
+function initDatabase() {
+  if (!fs.existsSync(DB_FILE)) {
+    fs.writeFileSync(DB_FILE, JSON.stringify(defaultData, null, 2), 'utf8');
+  }
+}
+
+// Read database
+function readDB() {
+  initDatabase();
+  try {
+    const raw = fs.readFileSync(DB_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error("Error reading DB file, restoring defaults:", err);
+    return defaultData;
+  }
+}
+
+// Write database
+function writeDB(data) {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error("Error writing to DB file:", err);
+    return false;
+  }
+}
+
+module.exports = {
+  readDB,
+  writeDB,
+  initDatabase
+};

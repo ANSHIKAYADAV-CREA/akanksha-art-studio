@@ -1,0 +1,24 @@
+{
+  "name": "akanksha-art-portfolio",
+  "version": "1.0.0",
+  "description": "Artistic Portfolio, E-Commerce Store, Face Painting Booking System, and Admin Dashboard for Akanksha",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": [
+    "art",
+    "portfolio",
+    "ecommerce",
+    "face-painting",
+    "poetry"
+  ],
+  "author": "Akanksha",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "razorpay": "^2.9.8"
+  }
+}
