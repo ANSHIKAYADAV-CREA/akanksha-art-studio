@@ -441,7 +441,9 @@
   color: var(--text-main);
 }
 
-.form-input, .form-select, .form-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
@@ -451,7 +453,9 @@
   transition: all var(--transition-fast);
 }
 
-.form-input:focus, .form-select:focus, .form-textarea:focus {
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   outline: none;
   border-color: var(--color-pink-400);
   box-shadow: 0 0 0 3px rgba(255, 117, 151, 0.2);
@@ -844,7 +848,8 @@
    CART DRAWER & CHECKOUT MODAL
    ========================================================================== */
 
-.cart-overlay, .modal-overlay {
+.cart-overlay,
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(35, 31, 32, 0.6);
@@ -855,7 +860,8 @@
   transition: opacity var(--transition-smooth);
 }
 
-.cart-overlay.open, .modal-overlay.open {
+.cart-overlay.open,
+.modal-overlay.open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -969,7 +975,9 @@
 
 /* Responsive Overrides */
 @media (max-width: 992px) {
-  .hero-grid,
+
+  /* Main layouts */
+  .hero-unified-grid,
   .artist-split-grid,
   .booking-wrapper,
   .contact-grid {
@@ -983,5 +991,90 @@
 
   .artist-photo {
     height: 380px;
+  }
+
+  /* Booking form - one column on mobile */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Prevent cards/forms from overflowing */
+  .booking-wrapper,
+  .booking-sidebar,
+  .booking-form-wrap,
+  .form-group,
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Gallery and other card grids */
+  .gallery-grid,
+  .poetry-grid,
+  .reviews-grid,
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Mobile-friendly spacing */
+  .booking-sidebar,
+  .booking-form-wrap {
+    padding: 2rem 1.25rem;
+  }
+
+  .hero-quote-card {
+    padding: 1.25rem;
+  }
+
+  .hero-quote-text {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .hero-unified-section {
+    padding: 3rem 0 4rem;
+  }
+
+  .hero-editorial-title {
+    font-size: clamp(2.4rem, 12vw, 3.4rem);
+  }
+
+  .artist-polaroid-wrap {
+    max-width: 100%;
+  }
+
+  .artist-photo-container {
+    height: 380px;
+  }
+
+  .floating-pill-badge.badge-top-right {
+    right: 5px;
+  }
+
+  .floating-pill-badge.badge-bottom-left {
+    left: 5px;
+  }
+
+  .hero-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions-row .btn {
+    width: 100%;
+  }
+
+  .price-estimate-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 }
