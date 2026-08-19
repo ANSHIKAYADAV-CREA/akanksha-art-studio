@@ -655,7 +655,7 @@ const Admin = {
   },
 
   // Photo handlers
-  handlePhotoFileSelect(e) {
+  async handlePhotoFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -664,16 +664,51 @@ const Admin = {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target.result;
-      const preview = document.getElementById('adminPhotoPreview');
+    const preview = document.getElementById('adminPhotoPreview');
+
+    // Show preview immediately
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+    }
+
+    try {
+      App.showToast('⏳ Uploading photo to Cloudinary...');
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Image upload failed');
+      }
+
+      const cloudinaryUrl = data.url;
+
       const inputUrl = document.getElementById('adminArtistImageUrl');
-      if (preview) preview.src = base64Url;
-      if (inputUrl) inputUrl.value = base64Url;
-      App.showToast('✨ Photo loaded from device! Click "Save Profile Settings & Photo" to publish.');
-    };
-    reader.readAsDataURL(file);
+
+      if (inputUrl) {
+        inputUrl.value = cloudinaryUrl;
+      }
+
+      if (preview) {
+        preview.src = cloudinaryUrl;
+      }
+
+      App.showToast('✅ Photo uploaded to Cloudinary successfully!');
+
+      console.log('Cloudinary URL:', cloudinaryUrl);
+      console.log('Cloudinary Public ID:', data.publicId);
+
+    } catch (error) {
+      console.error('Cloudinary upload error:', error);
+      App.showToast('❌ Photo upload failed: ' + error.message);
+    }
   },
 
   previewPhotoUrl(url) {

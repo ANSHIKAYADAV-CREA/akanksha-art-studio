@@ -1,18 +1,36 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { readDB, writeDB, initDatabase } = require('./database');
+const {
+  readDB,
+  writeDB,
+  initDatabase,
+  isDatabaseReady
+} = require('./database');
+
+const cloudinary = require('./cloudinary');
+const upload = require('./upload');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize database
-initDatabase();
+
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Wait until Firestore database has been loaded
+app.use((req, res, next) => {
+  if (isDatabaseReady()) {
+    return next();
+  }
+
+  return res.status(503).json({
+    success: false,
+    message: "Database is still initializing. Please try again."
+  });
+});
 
 // Serve static frontend assets
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -42,6 +60,49 @@ app.put('/api/settings', (req, res) => {
   res.json({ success: true, data: publicSettings, message: "Settings updated successfully" });
 });
 
+// -------------------------------------------------------------
+// CLOUDINARY IMAGE UPLOAD API
+// -------------------------------------------------------------
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'akanksha-art-studio'
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      stream.end(req.file.buffer);
+    });
+
+    res.json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      message: 'Image uploaded successfully to Cloudinary'
+    });
+
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Image upload failed',
+      error: error.message
+    });
+  }
+});
 // -------------------------------------------------------------
 // ARTWORKS API
 // -------------------------------------------------------------
@@ -496,7 +557,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🌸 Akanksha Art Portfolio server running beautifully at http://localhost:${PORT}`);
-});
+// Start Server after Firebase database is loaded
+initDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(
+        `🌸 Akanksha Art Portfolio server running beautifully at http://localhost:${PORT}`
+      );
+    });
+  })
+  .catch((error) => {
+    console.error("❌ Server could not start because Firebase failed:");
+    console.error(error);
+    process.exit(1);
+  });
