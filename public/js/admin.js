@@ -805,29 +805,95 @@ const Admin = {
     }
   },
 
-  openAddArtworkModal() {
+  async openAddArtworkModal() {
     const title = prompt('Artwork Title:', 'Whispers of North Campus II');
     if (!title) return;
-    const medium = prompt('Medium & Dimensions:', 'Acrylic & Gold Leaf on Canvas (24x36)');
+
+    const medium = prompt(
+      'Medium & Dimensions:',
+      'Acrylic & Gold Leaf on Canvas (24x36)'
+    );
+
     const price = parseInt(prompt('Price in INR:', '15000')) || 15000;
-    const image = prompt('Image URL:', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80');
 
-    API.addArtwork({
-      title,
-      medium,
-      category: 'Canvas Paintings',
-      price,
-      image,
-      dimensions: '24 x 36 inches',
-      description: 'Original studio creation inspired by delicate blush tones and Delhi sunlight.',
-      isSold: false
-    }).then(() => {
-      App.showToast('✨ New artwork published to gallery!');
-      Gallery.fetchArtworks();
-      this.switchTab('artworks');
-    });
+    // Open image file picker
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+
+      if (!file) {
+        App.showToast('❌ No image selected.');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        App.showToast('❌ Please select a valid image file.');
+        return;
+      }
+
+      try {
+        App.showToast('⏳ Uploading artwork image to Cloudinary...');
+
+        // Upload image to Cloudinary through backend
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const uploadResponse = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok || !uploadData.success) {
+          throw new Error(
+            uploadData.message || 'Image upload failed'
+          );
+        }
+
+        // Cloudinary HTTPS URL
+        const image = uploadData.url;
+
+        console.log('Artwork Cloudinary URL:', image);
+
+        // Save artwork
+        const result = await API.addArtwork({
+          title,
+          medium,
+          category: 'Canvas Paintings',
+          price,
+          image,
+          dimensions: '24 x 36 inches',
+          description:
+            'Original studio creation inspired by delicate blush tones and Delhi sunlight.',
+          isSold: false
+        });
+
+        if (!result.success) {
+          throw new Error(
+            result.message || 'Artwork could not be saved'
+          );
+        }
+
+        App.showToast('✨ Artwork uploaded & published successfully!');
+
+        await Gallery.fetchArtworks();
+        this.switchTab('artworks');
+
+      } catch (error) {
+        console.error('Artwork upload error:', error);
+        App.showToast(
+          '❌ Artwork upload failed: ' + error.message
+        );
+      }
+    };
+
+    // Open Windows file picker
+    fileInput.click();
   },
-
   openAddProductModal() {
     const title = prompt('Product Title:', 'Custom Hand-Painted Tote');
     if (!title) return;
