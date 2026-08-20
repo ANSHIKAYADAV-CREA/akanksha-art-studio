@@ -805,6 +805,7 @@ const Admin = {
     }
   },
 
+
   async openAddArtworkModal() {
     const title = prompt('Artwork Title:', 'Whispers of North Campus II');
     if (!title) return;
@@ -816,13 +817,17 @@ const Admin = {
 
     const price = parseInt(prompt('Price in INR:', '15000')) || 15000;
 
-    // Open image file picker
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/*';
+    fileInput.accept = 'image/jpeg,image/png,image/webp,image/jpg';
+    fileInput.style.display = 'none';
+
+    document.body.appendChild(fileInput);
 
     fileInput.onchange = async (event) => {
       const file = event.target.files[0];
+
+      fileInput.remove();
 
       if (!file) {
         App.showToast('❌ No image selected.');
@@ -830,36 +835,47 @@ const Admin = {
       }
 
       if (!file.type.startsWith('image/')) {
-        App.showToast('❌ Please select a valid image file.');
+        App.showToast('❌ Please select a valid image.');
         return;
       }
 
       try {
-        App.showToast('⏳ Uploading artwork image to Cloudinary...');
+        App.showToast('⏳ Uploading artwork image...');
 
-        // Upload image to Cloudinary through backend
         const formData = new FormData();
         formData.append('image', file);
+
+        console.log('Uploading artwork:', file.name);
+        console.log('File size:', file.size);
+        console.log('File type:', file.type);
 
         const uploadResponse = await fetch('/api/upload-image', {
           method: 'POST',
           body: formData
         });
 
+        console.log('Upload response status:', uploadResponse.status);
+
         const uploadData = await uploadResponse.json();
+
+        console.log('Upload response:', uploadData);
 
         if (!uploadResponse.ok || !uploadData.success) {
           throw new Error(
-            uploadData.message || 'Image upload failed'
+            uploadData.message || 'Cloudinary upload failed'
           );
         }
 
-        // Cloudinary HTTPS URL
         const image = uploadData.url;
 
-        console.log('Artwork Cloudinary URL:', image);
+        if (!image) {
+          throw new Error('Cloudinary did not return an image URL');
+        }
 
-        // Save artwork
+        console.log('Cloudinary image URL:', image);
+
+        App.showToast('✅ Image uploaded! Publishing artwork...');
+
         const result = await API.addArtwork({
           title,
           medium,
@@ -872,9 +888,11 @@ const Admin = {
           isSold: false
         });
 
-        if (!result.success) {
+        console.log('Artwork API response:', result);
+
+        if (!result || !result.success) {
           throw new Error(
-            result.message || 'Artwork could not be saved'
+            result?.message || 'Artwork could not be saved'
           );
         }
 
@@ -884,16 +902,17 @@ const Admin = {
         this.switchTab('artworks');
 
       } catch (error) {
-        console.error('Artwork upload error:', error);
+        console.error('❌ ARTWORK UPLOAD ERROR:', error);
+
         App.showToast(
           '❌ Artwork upload failed: ' + error.message
         );
       }
     };
 
-    // Open Windows file picker
     fileInput.click();
   },
+
   openAddProductModal() {
     const title = prompt('Product Title:', 'Custom Hand-Painted Tote');
     if (!title) return;
