@@ -24,8 +24,21 @@ const API = {
         throw new Error(errData.message || `HTTP Error ${response.status}`);
       }
       return await response.json();
-    } catch (err) {
-      console.warn(`[API] Fallback for ${endpoint}:`, err.message);
+    }  catch (err) {
+      console.error(`[API] Request failed for ${endpoint}:`, err.message);
+
+      // NEVER use local fallback for admin authentication
+      if (
+        endpoint === '/api/admin/login' ||
+        endpoint === '/api/admin/change-pin'
+      ) {
+        return {
+          success: false,
+          message: 'Admin authentication service is unavailable.'
+        };
+      }
+
+      // Local fallback is allowed for normal website data
       return API.localFallback(endpoint, options);
     }
   },
@@ -124,15 +137,5 @@ const API = {
       }
       return { success: true, data: db.settings };
     }
-
-    if (endpoint === '/api/admin/login') {
-      const { pin } = JSON.parse(options.body || '{}');
-      if (pin === '1234' || pin === 'akanksha') {
-        return { success: true, token: 'local_token' };
-      }
-      return { success: false, message: 'Invalid PIN (Use 1234)' };
-    }
-
-    return { success: true, data: [] };
-  }
+}
 };

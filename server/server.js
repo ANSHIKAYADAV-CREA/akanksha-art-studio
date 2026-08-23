@@ -904,28 +904,48 @@ app.post('/api/razorpay/verify-payment', (req, res) => {
 // -------------------------------------------------------------
 // ADMIN AUTH & STATS API
 // -------------------------------------------------------------
-app.post('/api/admin/login', (req, res) => {
-  const db = readDB();
-  const pin = String(req.body.pin || '').trim();
-  const currentPin = String(db.settings.adminPin || '1234').trim();
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const pin = String(req.body.pin || '').trim();
 
-  if (pin === currentPin) {
-    return res.json({
-      success: true,
-      token: 'admin_token_' + Date.now(),
-      message: "Admin authenticated successfully! Welcome back, Akanksha 🌸"
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter the Admin PIN/Password."
+      });
+    }
+
+    // Read the latest settings from Firestore/database
+    const database = await readDB();
+
+    const currentPin = String(
+      database.settings?.adminPin || ''
+    ).trim();
+
+    if (currentPin && pin === currentPin) {
+      return res.json({
+        success: true,
+        token: 'admin_token_' + Date.now(),
+        message: "Admin authenticated successfully! Welcome back, Akanksha 🌸"
+      });
+    }
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid Admin PIN/Password. Please check your credentials."
+    });
+
+  } catch (error) {
+    console.error("❌ Admin login error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to verify Admin password."
     });
   }
-
-  return res.status(401).json({
-    success: false,
-    message: "Invalid Admin PIN/Password. Please check your credentials."
-  });
 });
-
 app.post('/api/admin/change-pin', async (req, res) => {
   try {
-    const db = readDB();
     const newPin = String(req.body.newPin || '').trim();
 
     if (newPin.length < 3) {
@@ -935,30 +955,32 @@ app.post('/api/admin/change-pin', async (req, res) => {
       });
     }
 
-    // Update password in server memory
-    db.settings = {
-      ...db.settings,
+    // Read current database
+    const database = await readDB();
+
+    // Update admin password
+    database.settings = {
+      ...(database.settings || {}),
       adminPin: newPin
     };
 
-    // IMPORTANT:
-    // Wait until Firestore successfully saves the new password.
-    await writeDB(db);
+    // Save updated database to Firestore
+    await writeDB(database);
 
-    console.log("🔐 Admin password changed successfully.");
-    console.log("☁️ New admin password saved to Firestore.");
+    console.log("✅ Admin password successfully updated.");
 
     return res.json({
       success: true,
-      message: "Admin PIN/Password changed successfully!"
+      message: "Admin password changed successfully."
     });
 
   } catch (error) {
-    console.error("❌ Admin password change failed:", error);
+    console.error("❌ Failed to change admin password:");
+    console.error(error);
 
     return res.status(500).json({
       success: false,
-      message: "Could not save the new admin password. Please try again."
+      message: "Could not change admin password."
     });
   }
 });
