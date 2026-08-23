@@ -10,26 +10,30 @@ const Admin = {
   init() {
     this.bindEvents();
   },
-
   bindEvents() {
     // Open admin portal trigger
     const openAdminBtn = document.getElementById('openAdminBtn');
+
     if (openAdminBtn) {
       openAdminBtn.addEventListener('click', () => this.open());
     }
 
     // Admin login form
     const loginForm = document.getElementById('adminLoginForm');
+
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => this.handleLogin(e));
     }
 
     // Admin tab buttons
     const navItems = document.querySelectorAll('.admin-nav-item');
+
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
         navItems.forEach(n => n.classList.remove('active'));
+
         e.currentTarget.classList.add('active');
+
         this.switchTab(e.currentTarget.dataset.tab);
       });
     });
@@ -41,6 +45,7 @@ const Admin = {
     } else {
       this.showLoginForm();
     }
+
     App.openModal('adminModal');
   },
 
@@ -82,6 +87,9 @@ const Admin = {
         break;
       case 'artworks':
         await this.renderArtworks(contentArea);
+        break;
+      case 'facearts':
+        await this.renderFaceArts(contentArea);
         break;
       case 'products':
         await this.renderProducts(contentArea);
@@ -267,7 +275,86 @@ const Admin = {
     const res = await API.getBookings();
     const bookings = res.data || [];
 
+    const pricingRes = await API.getFacePaintingPricing();
+    const pricing = pricingRes.data || {
+      private: 2500,
+      fest: 3500,
+      editorial: 4000,
+      bridal: 5000,
+      extraGuest: 120
+    };
+
     container.innerHTML = `
+  <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+
+  <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem;">
+    🎨 Face Painting Pricing
+  </h3>
+
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Set the price customers will see for each face painting service.
+  </p>
+
+  <form onsubmit="Admin.saveFacePaintingPricing(event)">
+
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label class="form-label">
+          College Fest / Cultural Event
+        </label>
+
+        <input
+          type="number"
+          name="fest"
+          class="form-input"
+          value="${pricing.fest || 0}"
+          min="0"
+          required
+        />
+      </div>
+
+
+      <div class="form-group">
+        <label class="form-label">
+          Editorial / Fashion Photoshoot
+        </label>
+
+        <input
+          type="number"
+          name="editorial"
+          class="form-input"
+          value="${pricing.editorial || 0}"
+          min="0"
+          required
+        />
+      </div>
+
+
+      <div class="form-group">
+        <label class="form-label">
+          Private Gathering / Festival
+        </label>
+
+        <input
+          type="number"
+          name="private"
+          class="form-input"
+          value="${pricing.private || 0}"
+          min="0"
+          required
+        />
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      💾 Save Face Painting Prices
+    </button>
+
+  </form>
+
+</div>
       <div style="margin-bottom: 1.5rem;">
         <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Face Painting & Creative Bookings</h3>
         <p style="font-size: 0.85rem; color: var(--text-muted);">Manage requests for college fests, shoots, and private celebrations.</p>
@@ -530,7 +617,7 @@ const Admin = {
 
           <div class="form-group" style="margin-bottom: 1rem;">
             <label class="form-label">College / University</label>
-            <input type="text" name="institution" class="form-input" value="${s.institution || 'Hindu College, University of Delhi'}" required />
+            <input type="text" name="institution" class="form-input" value="${s.institution || ''}" required />
           </div>
 
           <div class="form-group" style="margin-bottom: 1rem;">
@@ -775,12 +862,54 @@ const Admin = {
       this.switchTab('products');
     }
   },
-
   async updateBookingStatus(id, status) {
     await API.updateBooking(id, { status });
     App.showToast(`Booking marked as ${status}!`);
     this.switchTab('bookings');
   },
+
+  async saveFacePaintingPricing(e) {
+    e.preventDefault();
+
+    const form = e.target;
+
+    const pricing = {
+      private: Number(form.elements['private'].value),
+      fest: Number(form.elements['fest'].value),
+      editorial: Number(form.elements['editorial'].value)
+    };
+
+    if (
+      !Number.isFinite(pricing.private) ||
+      pricing.private < 0 ||
+      !Number.isFinite(pricing.fest) ||
+      pricing.fest < 0 ||
+      !Number.isFinite(pricing.editorial) ||
+      pricing.editorial < 0
+    ) {
+      App.showToast(
+        '❌ Please enter valid prices for all services.'
+      );
+      return;
+    }
+
+    const res = await API.updateFacePaintingPricing(pricing);
+
+    if (res.success) {
+      App.showToast(
+        '🎨 Face painting prices saved successfully!'
+      );
+
+      await this.switchTab('bookings');
+
+    } else {
+      App.showToast(
+        '❌ Failed to save prices: ' +
+        (res.message || 'Unknown error')
+      );
+    }
+  },
+
 
   async deleteBooking(id) {
     if (confirm('Delete this booking?')) {
@@ -805,29 +934,15 @@ const Admin = {
     }
   },
 
-
-  async openAddArtworkModal() {
-    const title = prompt('Artwork Title:', 'Whispers of North Campus II');
-    if (!title) return;
-
-    const medium = prompt(
-      'Medium & Dimensions:',
-      'Acrylic & Gold Leaf on Canvas (24x36)'
-    );
-
-    const price = parseInt(prompt('Price in INR:', '15000')) || 15000;
-
+  openAddArtworkModal() {
+    // Create a real file input immediately from the button action
     const fileInput = document.createElement('input');
+
     fileInput.type = 'file';
     fileInput.accept = 'image/jpeg,image/png,image/webp,image/jpg';
-    fileInput.style.display = 'none';
-
-    document.body.appendChild(fileInput);
 
     fileInput.onchange = async (event) => {
       const file = event.target.files[0];
-
-      fileInput.remove();
 
       if (!file) {
         App.showToast('❌ No image selected.');
@@ -839,8 +954,35 @@ const Admin = {
         return;
       }
 
+      // Ask details AFTER image is selected
+      const title = prompt(
+        'Artwork Title:',
+        'Whispers of North Campus II'
+      );
+
+      if (!title) return;
+
+      const medium = prompt(
+        'Medium & Dimensions:',
+        'Acrylic & Gold Leaf on Canvas (24x36)'
+      );
+
+      if (!medium) return;
+
+      const priceInput = prompt(
+        'Price in INR:',
+        '15000'
+      );
+
+      const price = parseInt(priceInput);
+
+      if (isNaN(price) || price < 0) {
+        App.showToast('❌ Please enter a valid price.');
+        return;
+      }
+
       try {
-        App.showToast('⏳ Uploading artwork image...');
+        App.showToast('⏳ Uploading artwork image to Cloudinary...');
 
         const formData = new FormData();
         formData.append('image', file);
@@ -854,7 +996,10 @@ const Admin = {
           body: formData
         });
 
-        console.log('Upload response status:', uploadResponse.status);
+        console.log(
+          'Upload response status:',
+          uploadResponse.status
+        );
 
         const uploadData = await uploadResponse.json();
 
@@ -867,14 +1012,18 @@ const Admin = {
         }
 
         const image = uploadData.url;
-
+        const publicId = uploadData.publicId;
         if (!image) {
-          throw new Error('Cloudinary did not return an image URL');
+          throw new Error(
+            'Cloudinary did not return an image URL'
+          );
         }
 
         console.log('Cloudinary image URL:', image);
 
-        App.showToast('✅ Image uploaded! Publishing artwork...');
+        App.showToast(
+          '✅ Image uploaded! Saving artwork...'
+        );
 
         const result = await API.addArtwork({
           title,
@@ -882,54 +1031,216 @@ const Admin = {
           category: 'Canvas Paintings',
           price,
           image,
+          publicId,
           dimensions: '24 x 36 inches',
           description:
             'Original studio creation inspired by delicate blush tones and Delhi sunlight.',
-          isSold: false
+          isSold: false,
+          isFeatured: false
         });
 
         console.log('Artwork API response:', result);
 
         if (!result || !result.success) {
           throw new Error(
-            result?.message || 'Artwork could not be saved'
+            result?.message ||
+            'Artwork could not be saved'
           );
         }
 
-        App.showToast('✨ Artwork uploaded & published successfully!');
+        App.showToast(
+          '✨ Artwork uploaded & published successfully!'
+        );
 
         await Gallery.fetchArtworks();
+
         this.switchTab('artworks');
 
       } catch (error) {
-        console.error('❌ ARTWORK UPLOAD ERROR:', error);
+
+        console.error(
+          '❌ ARTWORK UPLOAD ERROR:',
+          error
+        );
 
         App.showToast(
-          '❌ Artwork upload failed: ' + error.message
+          '❌ Artwork upload failed: ' +
+          error.message
         );
       }
     };
 
+    // IMPORTANT:
+    // This click happens directly from the Admin button action.
     fileInput.click();
   },
+  async openAddProductModal() {
+    // Create a real file input immediately from the button action
+    const fileInput = document.createElement('input');
 
-  openAddProductModal() {
-    const title = prompt('Product Title:', 'Custom Hand-Painted Tote');
-    if (!title) return;
-    const price = parseInt(prompt('Price in INR:', '1299')) || 1299;
-    const image = prompt('Product Image URL:', 'https://images.unsplash.com/photo-1597633425046-08f5110420b5?auto=format&fit=crop&w=800&q=80');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/png,image/webp,image/jpg';
 
-    API.addProduct({
-      title,
-      category: 'Wearable Art',
-      price,
-      image,
-      description: 'Hand-crafted aesthetic artifact made with love.'
-    }).then(() => {
-      App.showToast('✨ Product added to store!');
-      Store.fetchProducts();
-      this.switchTab('products');
-    });
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+
+      if (!file) {
+        App.showToast('❌ No image selected.');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        App.showToast('❌ Please select a valid image.');
+        return;
+      }
+
+      // Ask details AFTER image is selected
+      const title = prompt(
+        'Product Title:',
+        'Custom Hand-Painted Tote'
+      );
+
+      if (!title) return;
+
+      const priceInput = prompt(
+        'Price in INR:',
+        '1299'
+      );
+
+      const price = parseInt(priceInput);
+
+      if (isNaN(price) || price < 0) {
+        App.showToast('❌ Please enter a valid price.');
+        return;
+      }
+
+      try {
+        // ==========================================
+        // 1. UPLOAD PRODUCT IMAGE TO CLOUDINARY
+        // ==========================================
+
+        App.showToast(
+          '⏳ Uploading product image to Cloudinary...'
+        );
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        console.log('Uploading product:', file.name);
+        console.log('File size:', file.size);
+        console.log('File type:', file.type);
+
+        const uploadResponse = await fetch(
+          '/api/upload-image',
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+        console.log(
+          'Upload response status:',
+          uploadResponse.status
+        );
+
+        const uploadData = await uploadResponse.json();
+
+        console.log(
+          'Upload response:',
+          uploadData
+        );
+
+        if (!uploadResponse.ok || !uploadData.success) {
+          throw new Error(
+            uploadData.message ||
+            'Cloudinary upload failed'
+          );
+        }
+
+        const image = uploadData.url;
+        const publicId = uploadData.publicId;
+
+        if (!image) {
+          throw new Error(
+            'Cloudinary did not return an image URL'
+          );
+        }
+
+        if (!publicId) {
+          throw new Error(
+            'Cloudinary did not return a Public ID'
+          );
+        }
+
+        console.log(
+          'Cloudinary image URL:',
+          image
+        );
+
+        console.log(
+          'Cloudinary Public ID:',
+          publicId
+        );
+
+        // ==========================================
+        // 2. SAVE PRODUCT
+        // ==========================================
+
+        App.showToast(
+          '✅ Image uploaded! Saving product...'
+        );
+
+        const result = await API.addProduct({
+          title,
+          category: 'Wearable Art',
+          price,
+          image,
+          publicId,
+          description:
+            'Hand-crafted aesthetic artifact made with love.'
+        });
+
+        console.log(
+          'Product API response:',
+          result
+        );
+
+        if (!result || !result.success) {
+          throw new Error(
+            result?.message ||
+            'Product could not be saved'
+          );
+        }
+
+        // ==========================================
+        // 3. SUCCESS
+        // ==========================================
+
+        App.showToast(
+          '✨ Product uploaded & published successfully!'
+        );
+
+        await Store.fetchProducts();
+
+        this.switchTab('products');
+
+      } catch (error) {
+
+        console.error(
+          '❌ PRODUCT UPLOAD ERROR:',
+          error
+        );
+
+        App.showToast(
+          '❌ Product upload failed: ' +
+          error.message
+        );
+      }
+    };
+
+    // IMPORTANT:
+    // Open file picker directly from Admin button action
+    fileInput.click();
   },
 
   openAddPoemModal() {
@@ -949,5 +1260,554 @@ const Admin = {
       Poetry.fetchPoems();
       this.switchTab('poems');
     });
+  },
+  // =====================================================
+  // FACE ART GALLERY
+  // =====================================================
+
+  async renderFaceArts(container) {
+    try {
+      const response = await fetch('/api/artworks');
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || 'Failed to load face arts'
+        );
+      }
+
+      const faceArts = (result.data || []).filter(
+        artwork =>
+          String(artwork.category || '').toLowerCase() ===
+          'face art'
+      );
+
+      const escapeHtml = (value) => {
+        return String(value ?? '').replace(
+          /[&<>"']/g,
+          (character) => {
+            const entities = {
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#039;'
+            };
+
+            return entities[character];
+          }
+        );
+      };
+
+      container.innerHTML = `
+      <div>
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+          "
+        >
+
+          <div>
+            <h3
+              style="
+                font-family: var(--font-serif);
+                font-size: 1.6rem;
+                margin-bottom: 0.4rem;
+              "
+            >
+              ✨ Face Art Gallery
+            </h3>
+
+            <p
+              style="
+                font-size: 0.85rem;
+                color: var(--text-muted);
+              "
+            >
+              Upload and manage face painting designs
+              displayed on the public website.
+            </p>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            onclick="Admin.openAddFaceArt()"
+          >
+            + Upload Face Art
+          </button>
+
+        </div>
+
+
+        ${faceArts.length === 0
+          ? `
+              <div
+                style="
+                  background: white;
+                  border: 1px solid var(--border-pink);
+                  border-radius: var(--radius-md);
+                  padding: 3rem 1.5rem;
+                  text-align: center;
+                "
+              >
+                <div style="font-size: 3rem;">
+                  🎨
+                </div>
+
+                <h4
+                  style="
+                    font-family: var(--font-serif);
+                    margin: 1rem 0 0.5rem;
+                    font-size: 1.3rem;
+                  "
+                >
+                  No Face Arts Yet
+                </h4>
+
+                <p
+                  style="
+                    color: var(--text-muted);
+                    font-size: 0.9rem;
+                    margin-bottom: 1.25rem;
+                  "
+                >
+                  Upload your first face art design
+                  and it will appear on the public
+                  Face Art Gallery.
+                </p>
+
+                <button
+                  class="btn btn-primary"
+                  onclick="Admin.openAddFaceArt()"
+                >
+                  🎨 Upload First Face Art
+                </button>
+              </div>
+            `
+          : `
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns:
+                    repeat(
+                      auto-fill,
+                      minmax(220px, 1fr)
+                    );
+                  gap: 1.25rem;
+                "
+              >
+
+                ${faceArts.map((art) => `
+                  <div
+                    style="
+                      background: white;
+                      border: 1px solid var(--border-pink);
+                      border-radius: var(--radius-md);
+                      overflow: hidden;
+                      box-shadow: var(--shadow-sm);
+                    "
+                  >
+
+                    <div
+                      style="
+                        width: 100%;
+                        aspect-ratio: 1 / 1;
+                        background: var(--color-pink-50);
+                        overflow: hidden;
+                      "
+                    >
+                      <img
+                        src="${escapeHtml(art.image)}"
+                        alt="${escapeHtml(art.title)}"
+                        style="
+                          width: 100%;
+                          height: 100%;
+                          object-fit: cover;
+                          display: block;
+                        "
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div style="padding: 1rem;">
+
+                      <h4
+                        style="
+                          font-family: var(--font-serif);
+                          font-size: 1.1rem;
+                          margin-bottom: 0.35rem;
+                        "
+                      >
+                        ${escapeHtml(art.title)}
+                      </h4>
+
+                      <p
+                        style="
+                          color: var(--text-muted);
+                          font-size: 0.8rem;
+                          margin-bottom: 0.75rem;
+                        "
+                      >
+                        ${escapeHtml(
+            art.description ||
+            'Face painting artwork'
+          )}
+                      </p>
+
+                      <div
+                        style="
+                          display: flex;
+                          gap: 0.5rem;
+                          flex-wrap: wrap;
+                        "
+                      >
+
+                        <span
+                          style="
+                            font-size: 0.72rem;
+                            padding: 0.25rem 0.6rem;
+                            border-radius: 999px;
+                            background: var(--color-pink-50);
+                            color: var(--color-pink-600);
+                          "
+                        >
+                          Face Art
+                        </span>
+
+                        <button
+                          class="btn-table-action btn-table-danger"
+                          onclick="
+                            Admin.deleteFaceArt(
+                              '${escapeHtml(art.id)}'
+                            )
+                          "
+                        >
+                          Delete
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+                `).join('')}
+
+              </div>
+            `
+        }
+
+      </div>
+    `;
+
+    } catch (error) {
+
+      console.error(
+        '❌ Failed to load face arts:',
+        error
+      );
+
+      container.innerHTML = `
+      <div
+        style="
+          padding: 2rem;
+          text-align: center;
+        "
+      >
+        <h3>
+          Unable to load Face Art Gallery
+        </h3>
+
+        <p
+          style="
+            color: var(--text-muted);
+            margin: 0.75rem 0 1rem;
+          "
+        >
+          ${error.message}
+        </p>
+
+        <button
+          class="btn btn-primary"
+          onclick="Admin.switchTab('facearts')"
+        >
+          Try Again
+        </button>
+      </div>
+    `;
+    }
+  },
+
+
+  async openAddFaceArt() {
+
+    const fileInput =
+      document.createElement('input');
+
+    fileInput.type = 'file';
+
+    fileInput.accept =
+      'image/jpeg,image/png,image/webp,image/jpg';
+
+    fileInput.onchange = async (event) => {
+
+      const file =
+        event.target.files[0];
+
+      if (!file) {
+        App.showToast(
+          '❌ No image selected.'
+        );
+
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        App.showToast(
+          '❌ Please select a valid image.'
+        );
+
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        App.showToast(
+          '❌ Image must be smaller than 10 MB.'
+        );
+
+        return;
+      }
+
+      const title = prompt(
+        'Face Art Title:',
+        'Festival Floral Face Art'
+      );
+
+      if (!title) {
+        return;
+      }
+
+      const description = prompt(
+        'Short Description:',
+        'Hand-painted festival face art with floral accents.'
+      );
+
+      if (description === null) {
+        return;
+      }
+
+      try {
+
+        App.showToast(
+          '⏳ Uploading face art to Cloudinary...'
+        );
+
+        // ==========================================
+        // 1. UPLOAD IMAGE
+        // ==========================================
+
+        const formData =
+          new FormData();
+
+        formData.append(
+          'image',
+          file
+        );
+
+        const uploadResponse =
+          await fetch(
+            '/api/upload-image',
+            {
+              method: 'POST',
+              body: formData
+            }
+          );
+
+        const uploadData =
+          await uploadResponse.json();
+
+        if (
+          !uploadResponse.ok ||
+          !uploadData.success
+        ) {
+          throw new Error(
+            uploadData.message ||
+            'Image upload failed'
+          );
+        }
+
+        const image =
+          uploadData.url;
+
+        const publicId =
+          uploadData.publicId;
+
+        if (!image) {
+          throw new Error(
+            'Cloudinary did not return an image URL.'
+          );
+        }
+
+        // ==========================================
+        // 2. SAVE FACE ART
+        // ==========================================
+
+        App.showToast(
+          '✅ Image uploaded! Publishing face art...'
+        );
+
+        const artworkResponse =
+          await fetch(
+            '/api/artworks',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json'
+              },
+
+              body: JSON.stringify({
+                title: title,
+
+                category: 'Face Art',
+
+                medium:
+                  'Face Painting',
+
+                dimensions:
+                  'Face Art',
+
+                year:
+                  new Date()
+                    .getFullYear()
+                    .toString(),
+
+                price: 0,
+
+                image: image,
+
+                publicId: publicId || '',
+
+                description:
+                  description,
+
+                isSold: false,
+
+                isFeatured: true
+              })
+            }
+          );
+
+        const artworkData =
+          await artworkResponse.json();
+
+        if (
+          !artworkResponse.ok ||
+          !artworkData.success
+        ) {
+          throw new Error(
+            artworkData.message ||
+            'Face art could not be saved.'
+          );
+        }
+
+        App.showToast(
+          '✨ Face art uploaded successfully!'
+        );
+
+        await this.renderFaceArts(
+          document.getElementById(
+            'adminTabContent'
+          )
+        );
+
+      } catch (error) {
+
+        console.error(
+          '❌ FACE ART UPLOAD ERROR:',
+          error
+        );
+
+        App.showToast(
+          '❌ Face art upload failed: ' +
+          error.message
+        );
+      }
+    };
+
+    // IMPORTANT:
+    // Open file picker directly from
+    // the admin button click.
+    fileInput.click();
+  },
+
+
+  async deleteFaceArt(id) {
+
+    const confirmed =
+      confirm(
+        'Are you sure you want to delete this face art?'
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      App.showToast(
+        '⏳ Deleting face art...'
+      );
+
+      const response =
+        await fetch(
+          `/api/artworks/${encodeURIComponent(id)}`,
+          {
+            method: 'DELETE'
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+          'Failed to delete face art.'
+        );
+      }
+
+      App.showToast(
+        '🗑️ Face art deleted successfully.'
+      );
+
+      await this.renderFaceArts(
+        document.getElementById(
+          'adminTabContent'
+        )
+      );
+
+    } catch (error) {
+
+      console.error(
+        '❌ FACE ART DELETE ERROR:',
+        error
+      );
+
+      App.showToast(
+        '❌ Could not delete face art: ' +
+        error.message
+      );
+    }
   }
 };

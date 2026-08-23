@@ -35,7 +35,7 @@ const App = {
   refreshSettings(s) {
     // Dynamic text elements
     document.querySelectorAll('.dyn-name').forEach(el => el.textContent = s.name || 'Akanksha');
-    document.querySelectorAll('.dyn-institution').forEach(el => el.textContent = s.institution || 'Hindu College, University of Delhi');
+    document.querySelectorAll('.dyn-institution').forEach(el => el.textContent = s.institution || '');
     document.querySelectorAll('.dyn-email').forEach(el => {
       el.textContent = s.email || 'akankshachandreshwar@gmail.com';
       if (el.tagName === 'A') el.href = `mailto:${s.email || 'akankshachandreshwar@gmail.com'}`;

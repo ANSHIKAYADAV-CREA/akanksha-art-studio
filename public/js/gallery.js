@@ -12,13 +12,31 @@ const Gallery = {
     await this.fetchArtworks();
     this.bindEvents();
   },
-
   async fetchArtworks() {
+
     const res = await API.getArtworks();
+
     if (res.success && res.data) {
-      this.artworks = res.data;
+
+      this.artworks = res.data.filter(function (artwork) {
+
+        const category =
+          String(artwork.category || '')
+            .trim()
+            .toLowerCase();
+
+        return !(
+          category === 'face art' ||
+          category === 'face painting' ||
+          category.includes('face art')
+        );
+
+      });
+
       this.render();
+
     }
+
   },
 
   bindEvents() {
@@ -46,14 +64,14 @@ const Gallery = {
   getFilteredArtworks() {
     return this.artworks.filter(art => {
       // Category check
-      const matchesCategory = 
-        this.currentFilter === 'all' || 
+      const matchesCategory =
+        this.currentFilter === 'all' ||
         (this.currentFilter === 'available' && !art.isSold) ||
         (this.currentFilter === 'sold' && art.isSold) ||
         art.category.toLowerCase().includes(this.currentFilter.toLowerCase());
 
       // Search check
-      const matchesSearch = 
+      const matchesSearch =
         !this.searchQuery ||
         art.title.toLowerCase().includes(this.searchQuery) ||
         art.medium.toLowerCase().includes(this.searchQuery) ||
@@ -87,10 +105,10 @@ const Gallery = {
       <div class="artwork-card" data-id="${art.id}">
         <div class="artwork-img-wrap" onclick="Gallery.openLightbox('${art.id}')" style="cursor: pointer;">
           <img src="${art.image}" alt="${art.title}" class="artwork-img" loading="lazy" />
-          ${art.isSold 
-            ? `<span class="artwork-badge-sold">Sold Out</span>` 
-            : `<span class="artwork-badge-cat">${art.category}</span>`
-          }
+          ${art.isSold
+        ? `<span class="artwork-badge-sold">Sold Out</span>`
+        : `<span class="artwork-badge-cat">${art.category}</span>`
+      }
         </div>
         <div class="artwork-info">
           <h3 class="artwork-title" onclick="Gallery.openLightbox('${art.id}')" style="cursor: pointer;">
@@ -104,14 +122,14 @@ const Gallery = {
               <button class="btn btn-secondary btn-sm" onclick="Gallery.openLightbox('${art.id}')" title="View Details">
                 🔍 Details
               </button>
-              ${!art.isSold 
-                ? `<button class="btn btn-primary btn-sm" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork')">
+              ${!art.isSold
+        ? `<button class="btn btn-primary btn-sm" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork')">
                     Add to Bag
-                   </button>` 
-                : `<button class="btn btn-earth btn-sm" onclick="App.openCommissionModal('${art.title.replace(/'/g, "\\'")}')">
+                   </button>`
+        : `<button class="btn btn-earth btn-sm" onclick="App.openCommissionModal('${art.title.replace(/'/g, "\\'")}')">
                     Inquire Similar
                    </button>`
-              }
+      }
             </div>
           </div>
         </div>
@@ -158,14 +176,14 @@ const Gallery = {
             </div>
           </div>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            ${!art.isSold 
-              ? `<button class="btn btn-primary" style="flex: 1;" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork'); App.closeModal('artworkModal');">
+            ${!art.isSold
+        ? `<button class="btn btn-primary" style="flex: 1;" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork'); App.closeModal('artworkModal');">
                   🛍️ Add to Cart & Checkout
                  </button>`
-              : `<button class="btn btn-earth" style="flex: 1;" onclick="App.closeModal('artworkModal'); App.openCommissionModal('${art.title.replace(/'/g, "\\'")}');">
+        : `<button class="btn btn-earth" style="flex: 1;" onclick="App.closeModal('artworkModal'); App.openCommissionModal('${art.title.replace(/'/g, "\\'")}');">
                   ✨ Commission a Similar Piece
                  </button>`
-            }
+      }
             <button class="btn btn-secondary" onclick="App.shareLink('${art.title}', window.location.href)">
               🔗 Share
             </button>

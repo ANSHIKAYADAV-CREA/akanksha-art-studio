@@ -7,7 +7,12 @@ let databaseCache = {
   bookings: [],
   poems: [],
   reviews: [],
-  orders: []
+  orders: [],
+  facePaintingPricing: {
+    private: 0,
+    fest: 0,
+    editorial: 0
+  }
 };
 
 let databaseReady = false;
@@ -37,6 +42,20 @@ async function initDatabase() {
 
     if (settingsDoc.exists) {
       databaseCache.settings = settingsDoc.data();
+    }
+
+    // Load face painting pricing
+    const pricingDoc = await db
+      .collection("settings")
+      .doc("facePaintingPricing")
+      .get();
+
+    if (pricingDoc.exists) {
+      databaseCache.facePaintingPricing = {
+        private: Number(pricingDoc.data().private) || 0,
+        fest: Number(pricingDoc.data().fest) || 0,
+        editorial: Number(pricingDoc.data().editorial) || 0
+      };
     }
 
     // Load all collections
@@ -75,40 +94,79 @@ function readDB() {
 // WRITE DATABASE
 // -------------------------------------------------------------
 function writeDB(data) {
-  // Update local memory immediately
   databaseCache = data;
 
-  // Save changes to Firestore in background
-  saveDatabaseToFirestore(data).catch(error => {
-    console.error("❌ Firestore save error:");
-    console.error(error);
-  });
-
-  return true;
+  return saveDatabaseToFirestore(data);
 }
 
 // -------------------------------------------------------------
 // SAVE DATABASE TO FIRESTORE
 // -------------------------------------------------------------
 async function saveDatabaseToFirestore(data) {
-  // Save settings
+  // ---------------------------------------------------------
+  // SAVE SETTINGS
+  // ---------------------------------------------------------
   if (data.settings) {
     await db
       .collection("settings")
       .doc("main")
       .set(data.settings);
   }
-
-  // Save all collection data
+  // Save face painting pricing
+  if (data.facePaintingPricing) {
+    await db
+      .collection("settings")
+      .doc("facePaintingPricing")
+      .set({
+        private: Number(data.facePaintingPricing.private) || 0,
+        fest: Number(data.facePaintingPricing.fest) || 0,
+        editorial: Number(data.facePaintingPricing.editorial) || 0
+      });
+  }
+  // ---------------------------------------------------------
+  // SYNC ALL COLLECTIONS
+  // ---------------------------------------------------------
   for (const collectionName of COLLECTIONS) {
     const items = Array.isArray(data[collectionName])
       ? data[collectionName]
       : [];
 
-    /*
-     * Firestore batch writes have a 500-operation limit.
-     * We therefore process the data in chunks.
-     */
+    const collectionRef = db.collection(collectionName);
+
+    // Get everything currently stored in Firestore
+    const existingSnapshot = await collectionRef.get();
+
+    // IDs that should exist after synchronization
+    const currentIds = new Set(
+      items
+        .filter(item => item.id)
+        .map(item => String(item.id))
+    );
+
+    // -------------------------------------------------------
+    // DELETE DOCUMENTS THAT NO LONGER EXIST
+    // -------------------------------------------------------
+    const deleteBatch = db.batch();
+    let deleteCount = 0;
+
+    existingSnapshot.docs.forEach(doc => {
+      if (!currentIds.has(doc.id)) {
+        deleteBatch.delete(doc.ref);
+        deleteCount++;
+      }
+    });
+
+    if (deleteCount > 0) {
+      await deleteBatch.commit();
+
+      console.log(
+        `🗑️ Firestore: deleted ${deleteCount} old ${collectionName} record(s)`
+      );
+    }
+
+    // -------------------------------------------------------
+    // SAVE / UPDATE CURRENT DOCUMENTS
+    // -------------------------------------------------------
     for (let i = 0; i < items.length; i += 400) {
       const batch = db.batch();
       const chunk = items.slice(i, i + 400);
@@ -116,14 +174,14 @@ async function saveDatabaseToFirestore(data) {
       for (const item of chunk) {
         if (!item.id) continue;
 
-        const docRef = db
-          .collection(collectionName)
-          .doc(String(item.id));
+        const docRef = collectionRef.doc(String(item.id));
 
         batch.set(docRef, item);
       }
 
-      await batch.commit();
+      if (chunk.length > 0) {
+        await batch.commit();
+      }
     }
   }
 

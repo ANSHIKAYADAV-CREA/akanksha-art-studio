@@ -4,7 +4,7 @@
  */
 
 const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-  ? '' 
+  ? ''
   : '';
 
 const API = {
@@ -18,7 +18,7 @@ const API = {
         },
         ...options
       });
-      
+
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.message || `HTTP Error ${response.status}`);
@@ -52,6 +52,13 @@ const API = {
   updateBooking: (id, data) => API.request(`/api/bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteBooking: (id) => API.request(`/api/bookings/${id}`, { method: 'DELETE' }),
 
+  // Face Painting Pricing
+  getFacePaintingPricing: () => API.request('/api/face-painting-pricing'),
+  updateFacePaintingPricing: (data) =>
+    API.request('/api/face-painting-pricing', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
   // Poems
   getPoems: () => API.request('/api/poems'),
   addPoem: (data) => API.request('/api/poems', { method: 'POST', body: JSON.stringify(data) }),
@@ -87,12 +94,12 @@ const API = {
     const method = options.method || 'GET';
     const key = 'akanksha_local_db';
     let db = JSON.parse(localStorage.getItem(key) || 'null');
-    
+
     if (!db) {
       db = {
         settings: {
           name: "Akanksha",
-          institution: "Hindu College, University of Delhi",
+          institution: "",
           email: "akankshachandreshwar@gmail.com",
           phone: "9517155681",
           instagramPrimary: "@_akanxha",

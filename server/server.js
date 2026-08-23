@@ -72,21 +72,44 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       });
     }
 
+    console.log('📸 Upload request received');
+    console.log('📁 File:', req.file.originalname);
+    console.log('📦 Size:', req.file.size);
+    console.log('🖼️ Type:', req.file.mimetype);
+
+    console.log('☁️ Cloudinary config:', {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key_found: !!process.env.CLOUDINARY_API_KEY,
+      api_secret_found: !!process.env.CLOUDINARY_API_SECRET
+    });
+
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'akanksha-art-studio'
+          folder: 'akanksha-art-studio',
+          resource_type: 'image'
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error('❌ CLOUDINARY RAW ERROR:', error);
+            console.error('❌ Message:', error.message);
+            console.error('❌ HTTP Code:', error.http_code);
+            console.error('❌ Error:', error.error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
         }
       );
 
       stream.end(req.file.buffer);
     });
 
-    res.json({
+    console.log('✅ CLOUDINARY UPLOAD SUCCESS');
+    console.log('🔗 URL:', result.secure_url);
+    console.log('🆔 Public ID:', result.public_id);
+
+    res.status(200).json({
       success: true,
       url: result.secure_url,
       publicId: result.public_id,
@@ -94,12 +117,19 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    console.error('======================================');
+    console.error('❌ CLOUDINARY UPLOAD FAILED');
+    console.error('Message:', error.message);
+    console.error('HTTP Code:', error.http_code);
+    console.error('Error:', error.error);
+    console.error('Full Error:', error);
+    console.error('======================================');
 
     res.status(500).json({
       success: false,
       message: 'Image upload failed',
-      error: error.message
+      error: error.message,
+      http_code: error.http_code || 500
     });
   }
 });
@@ -122,6 +152,7 @@ app.post('/api/artworks', (req, res) => {
     year: req.body.year || new Date().getFullYear().toString(),
     price: Number(req.body.price) || 0,
     image: req.body.image || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80',
+    publicId: req.body.publicId || '',
     description: req.body.description || '',
     isSold: Boolean(req.body.isSold),
     isFeatured: Boolean(req.body.isFeatured)
@@ -148,15 +179,149 @@ app.put('/api/artworks/:id', (req, res) => {
   res.json({ success: true, data: db.artworks[index], message: "Artwork updated successfully" });
 });
 
-app.delete('/api/artworks/:id', (req, res) => {
-  const db = readDB();
-  const index = db.artworks.findIndex(a => a.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Artwork not found" });
+app.delete('/api/artworks/:id', async (req, res) => {
+  try {
+    const db = readDB();
+
+    const index = db.artworks.findIndex(
+      artwork => artwork.id === req.params.id
+    );
+
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Artwork not found'
+      });
+    }
+
+    const artwork = db.artworks[index];
+
+    // =====================================================
+    // 1. GET CLOUDINARY PUBLIC ID
+    // =====================================================
+
+    let publicId = artwork.publicId || '';
+
+    // For OLD artworks that don't have publicId saved,
+    // try to extract it from the Cloudinary image URL.
+    if (!publicId && artwork.image) {
+      try {
+        const imageUrl = artwork.image;
+
+        if (imageUrl.includes('res.cloudinary.com')) {
+          const uploadMarker = '/upload/';
+
+          const uploadIndex = imageUrl.indexOf(uploadMarker);
+
+          if (uploadIndex !== -1) {
+            let cloudinaryPath =
+              imageUrl.substring(
+                uploadIndex + uploadMarker.length
+              );
+
+            // Remove version, e.g. v1234567890/
+            cloudinaryPath = cloudinaryPath.replace(
+              /^v\d+\//,
+              ''
+            );
+
+            // Remove file extension
+            cloudinaryPath = cloudinaryPath.replace(
+              /\.[^/.]+$/,
+              ''
+            );
+
+            publicId = cloudinaryPath;
+          }
+        }
+      } catch (extractError) {
+        console.error(
+          '⚠️ Could not extract Cloudinary public ID:',
+          extractError.message
+        );
+      }
+    }
+
+    console.log('🆔 Artwork Public ID:', publicId || 'NONE');
+
+    // =====================================================
+    // 2. DELETE IMAGE FROM CLOUDINARY
+    // =====================================================
+
+    if (publicId) {
+      try {
+        console.log(
+          '☁️ Deleting image from Cloudinary:',
+          publicId
+        );
+
+        const cloudinaryResult =
+          await cloudinary.uploader.destroy(
+            publicId,
+            {
+              resource_type: 'image'
+            }
+          );
+
+        console.log(
+          '☁️ Cloudinary delete result:',
+          cloudinaryResult
+        );
+
+      } catch (cloudinaryError) {
+
+        console.error(
+          '❌ Cloudinary delete failed:',
+          cloudinaryError.message
+        );
+
+        return res.status(500).json({
+          success: false,
+          message:
+            'Artwork was not deleted because its Cloudinary image could not be deleted.',
+          error: cloudinaryError.message
+        });
+      }
+
+    } else {
+      console.log(
+        'ℹ️ No Cloudinary image found for this artwork.'
+      );
+    }
+
+    // =====================================================
+    // 3. DELETE ARTWORK FROM FIRESTORE / DATABASE
+    // =====================================================
+
+    db.artworks.splice(index, 1);
+
+    writeDB(db);
+
+    console.log(
+      '🗑️ Artwork permanently deleted:',
+      artwork.id
+    );
+
+    res.json({
+      success: true,
+      data: artwork,
+      message:
+        'Artwork and associated Cloudinary image deleted successfully'
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Artwork delete error:',
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete artwork',
+      error: error.message
+    });
   }
-  const deleted = db.artworks.splice(index, 1);
-  writeDB(db);
-  res.json({ success: true, data: deleted[0], message: "Artwork removed" });
 });
 
 // -------------------------------------------------------------
@@ -177,6 +342,7 @@ app.post('/api/products', (req, res) => {
     originalPrice: Number(req.body.originalPrice) || Number(req.body.price) || 0,
     stock: Number(req.body.stock) || 10,
     image: req.body.image || 'https://images.unsplash.com/photo-1597633425046-08f5110420b5?auto=format&fit=crop&w=800&q=80',
+    publicId: req.body.publicId || '',
     description: req.body.description || '',
     tag: req.body.tag || 'New',
     rating: Number(req.body.rating) || 5.0
@@ -201,16 +367,215 @@ app.put('/api/products/:id', (req, res) => {
   writeDB(db);
   res.json({ success: true, data: db.products[index], message: "Product updated successfully" });
 });
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const db = readDB();
 
-app.delete('/api/products/:id', (req, res) => {
-  const db = readDB();
-  const index = db.products.findIndex(p => p.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Product not found" });
+    const index = db.products.findIndex(
+      product => product.id === req.params.id
+    );
+
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    const product = db.products[index];
+
+    // =====================================================
+    // 1. GET CLOUDINARY PUBLIC ID
+    // =====================================================
+
+    let publicId = product.publicId || '';
+
+    // For older products where publicId wasn't saved,
+    // extract it from the Cloudinary image URL.
+    if (!publicId && product.image) {
+      try {
+        const imageUrl = product.image;
+
+        if (imageUrl.includes('res.cloudinary.com')) {
+          const uploadMarker = '/upload/';
+          const uploadIndex = imageUrl.indexOf(uploadMarker);
+
+          if (uploadIndex !== -1) {
+            let cloudinaryPath = imageUrl.substring(
+              uploadIndex + uploadMarker.length
+            );
+
+            // Remove version, e.g. v1234567890/
+            cloudinaryPath = cloudinaryPath.replace(
+              /^v\d+\//,
+              ''
+            );
+
+            // Remove file extension
+            cloudinaryPath = cloudinaryPath.replace(
+              /\.[^/.]+$/,
+              ''
+            );
+
+            publicId = cloudinaryPath;
+          }
+        }
+      } catch (extractError) {
+        console.error(
+          '⚠️ Could not extract Product Cloudinary Public ID:',
+          extractError.message
+        );
+      }
+    }
+
+    console.log(
+      '🆔 Product Public ID:',
+      publicId || 'NONE'
+    );
+
+    // =====================================================
+    // 2. DELETE IMAGE FROM CLOUDINARY
+    // =====================================================
+
+    if (publicId) {
+      try {
+        console.log(
+          '☁️ Deleting product image from Cloudinary:',
+          publicId
+        );
+
+        const cloudinaryResult =
+          await cloudinary.uploader.destroy(
+            publicId,
+            {
+              resource_type: 'image'
+            }
+          );
+
+        console.log(
+          '☁️ Cloudinary delete result:',
+          cloudinaryResult
+        );
+
+      } catch (cloudinaryError) {
+
+        console.error(
+          '❌ Product Cloudinary delete failed:',
+          cloudinaryError.message
+        );
+
+        return res.status(500).json({
+          success: false,
+          message:
+            'Product was not deleted because its Cloudinary image could not be deleted.',
+          error: cloudinaryError.message
+        });
+      }
+
+    } else {
+      console.log(
+        'ℹ️ No Cloudinary image found for this product.'
+      );
+    }
+
+    // =====================================================
+    // 3. DELETE PRODUCT FROM FIRESTORE / DATABASE
+    // =====================================================
+
+    db.products.splice(index, 1);
+
+    writeDB(db);
+
+    console.log(
+      '🗑️ Product permanently deleted:',
+      product.id
+    );
+
+    res.json({
+      success: true,
+      data: product,
+      message:
+        'Product and associated Cloudinary image deleted successfully'
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Product delete error:',
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete product',
+      error: error.message
+    });
   }
-  const deleted = db.products.splice(index, 1);
-  writeDB(db);
-  res.json({ success: true, data: deleted[0], message: "Product removed" });
+});
+
+app.delete('/api/artworks/:id', async (req, res) => {
+  try {
+    const db = readDB();
+
+    const index = db.artworks.findIndex(
+      artwork => artwork.id === req.params.id
+    );
+
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Artwork not found'
+      });
+    }
+
+    const artwork = db.artworks[index];
+
+    // Delete image from Cloudinary first
+    if (artwork.publicId) {
+      try {
+        const cloudinaryResult = await cloudinary.uploader.destroy(
+          artwork.publicId,
+          {
+            resource_type: 'image'
+          }
+        );
+
+        console.log('☁️ Cloudinary delete result:', cloudinaryResult);
+      } catch (cloudinaryError) {
+        console.error(
+          '❌ Cloudinary delete failed:',
+          cloudinaryError.message
+        );
+
+        return res.status(500).json({
+          success: false,
+          message: 'Could not delete the artwork image from Cloudinary.',
+          error: cloudinaryError.message
+        });
+      }
+    }
+
+    // Delete artwork record from database
+    db.artworks.splice(index, 1);
+    writeDB(db);
+
+    console.log('🗑️ Artwork permanently deleted:', artwork.id);
+
+    res.json({
+      success: true,
+      data: artwork,
+      message: 'Artwork and Cloudinary image permanently deleted'
+    });
+
+  } catch (error) {
+    console.error('❌ Artwork delete error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete artwork',
+      error: error.message
+    });
+  }
 });
 
 // -------------------------------------------------------------
@@ -267,6 +632,57 @@ app.delete('/api/bookings/:id', (req, res) => {
   const deleted = db.bookings.splice(index, 1);
   writeDB(db);
   res.json({ success: true, data: deleted[0], message: "Booking deleted" });
+});
+app.get('/api/face-painting-pricing', (req, res) => {
+  const db = readDB();
+
+  const pricing = db.facePaintingPricing || {
+    private: 0,
+    fest: 0,
+    editorial: 0
+  };
+
+  res.json({
+    success: true,
+    data: pricing
+  });
+});
+
+
+app.put('/api/face-painting-pricing', (req, res) => {
+  const db = readDB();
+
+  const privatePrice = Number(req.body.private);
+  const festPrice = Number(req.body.fest);
+  const editorialPrice = Number(req.body.editorial);
+
+  if (
+    !Number.isFinite(privatePrice) ||
+    privatePrice < 0 ||
+    !Number.isFinite(festPrice) ||
+    festPrice < 0 ||
+    !Number.isFinite(editorialPrice) ||
+    editorialPrice < 0
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter valid prices for all face painting services.'
+    });
+  }
+
+  db.facePaintingPricing = {
+    private: privatePrice,
+    fest: festPrice,
+    editorial: editorialPrice
+  };
+
+  writeDB(db);
+
+  res.json({
+    success: true,
+    data: db.facePaintingPricing,
+    message: 'Face painting prices updated successfully!'
+  });
 });
 
 // -------------------------------------------------------------
@@ -490,27 +906,61 @@ app.post('/api/razorpay/verify-payment', (req, res) => {
 // -------------------------------------------------------------
 app.post('/api/admin/login', (req, res) => {
   const db = readDB();
-  const { pin } = req.body;
-  const currentPin = db.settings.adminPin || '1234';
-  if (pin === currentPin || pin === '1234' || pin === 'akanksha') {
+  const pin = String(req.body.pin || '').trim();
+  const currentPin = String(db.settings.adminPin || '1234').trim();
+
+  if (pin === currentPin) {
     return res.json({
       success: true,
       token: 'admin_token_' + Date.now(),
       message: "Admin authenticated successfully! Welcome back, Akanksha 🌸"
     });
   }
-  res.status(401).json({ success: false, message: `Invalid Admin PIN/Password. Please check your credentials.` });
+
+  return res.status(401).json({
+    success: false,
+    message: "Invalid Admin PIN/Password. Please check your credentials."
+  });
 });
 
-app.post('/api/admin/change-pin', (req, res) => {
-  const db = readDB();
-  const { newPin } = req.body;
-  if (!newPin || newPin.trim().length < 3) {
-    return res.status(400).json({ success: false, message: "PIN/Password must be at least 3 characters long." });
+app.post('/api/admin/change-pin', async (req, res) => {
+  try {
+    const db = readDB();
+    const newPin = String(req.body.newPin || '').trim();
+
+    if (newPin.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "PIN/Password must be at least 3 characters long."
+      });
+    }
+
+    // Update password in server memory
+    db.settings = {
+      ...db.settings,
+      adminPin: newPin
+    };
+
+    // IMPORTANT:
+    // Wait until Firestore successfully saves the new password.
+    await writeDB(db);
+
+    console.log("🔐 Admin password changed successfully.");
+    console.log("☁️ New admin password saved to Firestore.");
+
+    return res.json({
+      success: true,
+      message: "Admin PIN/Password changed successfully!"
+    });
+
+  } catch (error) {
+    console.error("❌ Admin password change failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not save the new admin password. Please try again."
+    });
   }
-  db.settings.adminPin = newPin.trim();
-  writeDB(db);
-  res.json({ success: true, message: "Admin PIN/Password changed successfully! Remember your new credentials." });
 });
 
 

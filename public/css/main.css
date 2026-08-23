@@ -14,7 +14,7 @@
   --color-pink-400: #FF7597;
   --color-pink-500: #E64972;
   --color-pink-600: #C9184A;
-  
+
   /* Warm Earthy & Terracotta */
   --color-earth-100: #F7EDE2;
   --color-earth-300: #E5C3A6;
@@ -29,18 +29,18 @@
   --bg-surface-elevated: #FFF9FA;
   --bg-glass: rgba(255, 255, 255, 0.82);
   --bg-glass-pink: rgba(255, 230, 235, 0.75);
-  
+
   /* Typography Colors */
   --text-main: #231F20;
   --text-muted: #665C5E;
   --text-light: #948689;
   --text-accent: #C9184A;
-  
+
   /* Borders & Shadows */
   --border-subtle: rgba(230, 73, 114, 0.15);
   --border-pink: rgba(255, 117, 151, 0.35);
   --border-light: rgba(35, 31, 32, 0.08);
-  
+
   --shadow-sm: 0 2px 8px rgba(201, 24, 74, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   --shadow-md: 0 8px 24px rgba(201, 24, 74, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 16px 36px rgba(201, 24, 74, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -59,7 +59,7 @@
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-full: 9999px;
-  
+
   --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -69,7 +69,9 @@
    RESET & BASE STYLES
    ========================================================================== */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -89,7 +91,7 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   position: relative;
-  background-image: 
+  background-image:
     radial-gradient(circle at 10% 20%, rgba(255, 204, 213, 0.35) 0%, transparent 40%),
     radial-gradient(circle at 90% 60%, rgba(247, 237, 226, 0.45) 0%, transparent 45%),
     radial-gradient(circle at 50% 90%, rgba(255, 230, 235, 0.3) 0%, transparent 50%);
@@ -100,13 +102,16 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--color-pink-50);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-pink-300);
   border-radius: var(--radius-full);
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-pink-400);
 }
@@ -118,7 +123,12 @@ body {
 }
 
 /* Typography Hierarchy */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-serif);
   color: var(--text-main);
   line-height: 1.2;
@@ -156,7 +166,10 @@ img {
   display: block;
 }
 
-button, input, textarea, select {
+button,
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: inherit;
 }
@@ -229,8 +242,13 @@ button, input, textarea, select {
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* ==========================================================================
@@ -506,11 +524,10 @@ button, input, textarea, select {
   .nav-links {
     display: none;
   }
-  
+
   .mobile-nav-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
   }
 }
-

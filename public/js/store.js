@@ -299,7 +299,7 @@ const Store = {
             },
             notes: {
               address: address,
-              university: 'Hindu College DU'
+              university: ''
             },
             theme: {
               color: '#E64972'
