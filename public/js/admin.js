@@ -981,6 +981,13 @@ const Admin = {
         return;
       }
 
+      const description = prompt(
+        'Artwork Description / Quote:',
+        'Original studio creation inspired by delicate blush tones and Delhi sunlight.'
+      );
+
+      if (!description) return;
+
       try {
         App.showToast('⏳ Uploading artwork image to Cloudinary...');
 
@@ -1033,8 +1040,7 @@ const Admin = {
           image,
           publicId,
           dimensions: '24 x 36 inches',
-          description:
-            'Original studio creation inspired by delicate blush tones and Delhi sunlight.',
+          description: description,
           isSold: false,
           isFeatured: false
         });
@@ -1113,6 +1119,13 @@ const Admin = {
         App.showToast('❌ Please enter a valid price.');
         return;
       }
+
+      const description = prompt(
+        'Product/Artifact Description:',
+        'Hand-crafted aesthetic artifact made with love.'
+      );
+
+      if (!description) return;
 
       try {
         // ==========================================
@@ -1196,8 +1209,7 @@ const Admin = {
           price,
           image,
           publicId,
-          description:
-            'Hand-crafted aesthetic artifact made with love.'
+          description: description
         });
 
         console.log(
