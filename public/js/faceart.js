@@ -177,10 +177,14 @@ const FaceArt = {
       }
     });
 
-    // Update booking section feature photo with the latest published Face Art
+    // Update booking section feature photo with custom setting or latest published Face Art
     const bookingFeatureImg = document.getElementById('bookingFeatureImage');
-    if (bookingFeatureImg && this.faceArts.length > 0 && this.faceArts[0].image) {
-      bookingFeatureImg.src = this.faceArts[0].image;
+    if (bookingFeatureImg) {
+      if (App && App.settings && App.settings.bookingFeatureImage && App.settings.bookingFeatureImage.trim() !== '') {
+        bookingFeatureImg.src = App.settings.bookingFeatureImage;
+      } else if (this.faceArts.length > 0 && this.faceArts[0].image) {
+        bookingFeatureImg.src = this.faceArts[0].image;
+      }
     }
   },
 

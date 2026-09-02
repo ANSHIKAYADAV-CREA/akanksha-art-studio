@@ -54,11 +54,19 @@ const App = {
       if (el.tagName === 'A') el.href = `https://wa.me/91${s.phone || '9517155681'}?text=Hi!%20I%20saw%20your%20art%20portfolio%20and%20would%20love%20to%20connect%20✨`;
     });
 
+    this.settings = s;
+
     // Dynamic Artist Image: uses admin photo if uploaded, otherwise placeholder
     const placeholderHero = 'images/artist-placeholder.svg';
     document.querySelectorAll('.dyn-artist-img').forEach(el => {
       el.src = (s.artistImage && s.artistImage.trim() !== '') ? s.artistImage : placeholderHero;
     });
+
+    // Dynamic Face Painting Booking Spotlight Photo
+    const bookingFeatureImg = document.getElementById('bookingFeatureImage');
+    if (bookingFeatureImg && s.bookingFeatureImage && s.bookingFeatureImage.trim() !== '') {
+      bookingFeatureImg.src = s.bookingFeatureImage;
+    }
 
     const bioQuoteEl = document.getElementById('heroBioQuote');
     if (bioQuoteEl && s.bioQuote) {

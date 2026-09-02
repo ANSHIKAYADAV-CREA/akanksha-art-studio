@@ -12,10 +12,11 @@
     "razorpayKeyId": "",
     "razorpayKeySecret": "",
     "institution": "Hindu College, University of Delhi",
-    "artistImage": "",
-    "name": "AKAMATOE",
+    "artistImage": "https://res.cloudinary.com/wempi94r/image/upload/v1788361558/akanksha-art-studio/fs8fjqh5la4y5zyahx0c.jpg",
+    "name": "AKANKSHA",
     "tagline": "unwearied creation",
-    "title": "unwearied creation"
+    "title": "unwearied creation",
+    "bookingFeatureImage": "https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80"
   },
   "artworks": [
     {

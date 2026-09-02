@@ -97,8 +97,8 @@ const Admin = {
       case 'bookings':
         await this.renderBookings(contentArea);
         break;
-      case 'poems':
-        await this.renderPoems(contentArea);
+      case 'booking-photo':
+        await this.renderBookingPhoto(contentArea);
         break;
       case 'reviews':
         await this.renderReviews(contentArea);
@@ -412,49 +412,173 @@ const Admin = {
     `;
   },
 
-  // 5. Poems Tab
-  async renderPoems(container) {
-    const res = await API.getPoems();
-    const poems = res.data || [];
+  // 5. Booking Spotlight Photo Tab (Dedicated section for photo on the left of Face Painting booking)
+  async renderBookingPhoto(container) {
+    const res = await API.getSettings();
+    const settings = res.data || {};
+    const currentImg = settings.bookingFeatureImage || 'https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80';
 
     container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <div>
-          <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Manage Poetry & Writings</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">Publish verses, poems, and book excerpts.</p>
+      <div style="max-width: 850px; margin: 0 auto;">
+        <div style="margin-bottom: 2rem;">
+          <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-pink-600); font-weight: 600;">Booking Showcase</span>
+          <h3 style="font-family: var(--font-serif); font-size: 1.8rem; margin: 0.25rem 0 0.5rem;">
+            Face Painting Booking Spotlight Photo
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Upload and manage the photograph that appears in the spotlight card on the left side of the Face Painting booking form on the public website.
+          </p>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="Admin.openAddPoemModal()">+ Write New Poem</button>
-      </div>
 
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Theme</th>
-              <th>Book / Collection</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${poems.map(p => `
-              <tr>
-                <td><strong>${p.title}</strong></td>
-                <td>${p.theme}</td>
-                <td>📖 ${p.book}</td>
-                <td>${p.date}</td>
-                <td>
-                  <button class="btn-table-action btn-table-danger" onclick="Admin.deletePoem('${p.id}')">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div style="display: grid; grid-template-columns: minmax(260px, 320px) 1fr; gap: 2rem; align-items: start; background: white; padding: 2rem; border-radius: var(--radius-md); border: 1px solid var(--border-pink); box-shadow: var(--shadow-sm);">
+          
+          <!-- Current Photo Preview -->
+          <div>
+            <label class="form-label" style="margin-bottom: 0.75rem; display: block; font-weight: 600;">
+              Live Preview on Website
+            </label>
+            <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; border: 2px solid var(--border-pink); box-shadow: var(--shadow-md); aspect-ratio: 4/5; background: var(--color-pink-50);">
+              <img id="adminBookingPhotoPreview" src="${currentImg}" alt="Booking Spotlight" style="width: 100%; height: 100%; object-fit: cover;" />
+            </div>
+            <div style="text-align: center; margin-top: 0.75rem;">
+              <span class="hero-tag-pill" style="font-size: 0.75rem;">🌸 Current Active Photo</span>
+            </div>
+          </div>
+
+          <!-- Upload & Controls -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- Direct Device Upload Area -->
+            <div style="border: 2px dashed var(--color-pink-300); background: var(--color-pink-50); border-radius: var(--radius-md); padding: 2rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s ease;"
+                 onclick="document.getElementById('adminBookingPhotoFileInput').click()"
+                 onmouseover="this.style.borderColor='var(--color-pink-500)'; this.style.background='var(--color-pink-100)'"
+                 onmouseout="this.style.borderColor='var(--color-pink-300)'; this.style.background='var(--color-pink-50)'">
+              <input type="file" id="adminBookingPhotoFileInput" accept="image/*" style="display: none;" onchange="Admin.handleBookingPhotoUpload(event)" />
+              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📸</div>
+              <h4 style="font-family: var(--font-serif); font-size: 1.2rem; color: var(--color-pink-600); margin-bottom: 0.35rem;">
+                Upload New Photo from Device
+              </h4>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Click here to browse an image (JPG, PNG, WebP)
+              </p>
+              <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); document.getElementById('adminBookingPhotoFileInput').click()">
+                Select Photo
+              </button>
+              <div id="adminBookingPhotoUploadStatus" style="margin-top: 0.75rem; font-size: 0.8rem; font-weight: 500; display: none;"></div>
+            </div>
+
+            <!-- Alternative: Direct Image URL -->
+            <div style="background: var(--bg-surface-elevated); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Or Paste Image URL directly:</label>
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <input type="url" id="adminBookingPhotoUrlInput" class="form-input" placeholder="https://..." value="${currentImg}" style="font-size: 0.85rem;" />
+                <button type="button" class="btn btn-secondary btn-sm" onclick="Admin.saveBookingPhotoUrl()">
+                  Save URL
+                </button>
+              </div>
+            </div>
+
+            <!-- Reset option -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Want to restore default showcase?</span>
+              <button type="button" class="btn btn-outline btn-sm" onclick="Admin.resetBookingPhoto()">
+                Reset to Default
+              </button>
+            </div>
+
+          </div>
+
+        </div>
       </div>
     `;
+  },
+
+  async handleBookingPhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById('adminBookingPhotoUploadStatus');
+    const previewEl = document.getElementById('adminBookingPhotoPreview');
+
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--color-pink-600)';
+      statusEl.textContent = '⏳ Uploading to Cloudinary... please wait.';
+    }
+
+    try {
+      const uploadRes = await API.uploadImage(file);
+      if (!uploadRes.success || !uploadRes.url) {
+        throw new Error(uploadRes.message || 'Upload failed');
+      }
+
+      const photoUrl = uploadRes.url;
+      if (previewEl) previewEl.src = photoUrl;
+
+      // Save to settings
+      const saveRes = await API.updateSettings({ bookingFeatureImage: photoUrl });
+      if (!saveRes.success) throw new Error(saveRes.message || 'Could not update settings');
+
+      // Update public website DOM immediately
+      const publicImg = document.getElementById('bookingFeatureImage');
+      if (publicImg) publicImg.src = photoUrl;
+
+      const urlInput = document.getElementById('adminBookingPhotoUrlInput');
+      if (urlInput) urlInput.value = photoUrl;
+
+      if (statusEl) {
+        statusEl.style.color = '#155724';
+        statusEl.textContent = '✅ Photo uploaded & published to Booking section successfully!';
+      }
+      App.showToast('🌸 Booking showcase photo updated successfully!');
+    } catch (err) {
+      console.error(err);
+      if (statusEl) {
+        statusEl.style.color = '#721c24';
+        statusEl.textContent = '❌ ' + (err.message || 'Error uploading photo');
+      }
+      App.showToast('❌ ' + (err.message || 'Error uploading photo'));
+    }
+  },
+
+  async saveBookingPhotoUrl() {
+    const urlInput = document.getElementById('adminBookingPhotoUrlInput');
+    const photoUrl = urlInput ? urlInput.value.trim() : '';
+    if (!photoUrl) {
+      App.showToast('⚠️ Please enter a valid photo URL');
+      return;
+    }
+
+    try {
+      const saveRes = await API.updateSettings({ bookingFeatureImage: photoUrl });
+      if (!saveRes.success) throw new Error(saveRes.message || 'Could not update settings');
+
+      const previewEl = document.getElementById('adminBookingPhotoPreview');
+      if (previewEl) previewEl.src = photoUrl;
+
+      const publicImg = document.getElementById('bookingFeatureImage');
+      if (publicImg) publicImg.src = photoUrl;
+
+      App.showToast('✅ Booking showcase photo URL updated!');
+    } catch (err) {
+      App.showToast('❌ ' + (err.message || 'Failed to update photo URL'));
+    }
+  },
+
+  async resetBookingPhoto() {
+    const defaultUrl = 'https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80';
+    try {
+      await API.updateSettings({ bookingFeatureImage: defaultUrl });
+      const previewEl = document.getElementById('adminBookingPhotoPreview');
+      if (previewEl) previewEl.src = defaultUrl;
+      const publicImg = document.getElementById('bookingFeatureImage');
+      if (publicImg) publicImg.src = defaultUrl;
+      const urlInput = document.getElementById('adminBookingPhotoUrlInput');
+      if (urlInput) urlInput.value = defaultUrl;
+      App.showToast('🌸 Reset booking photo to default!');
+    } catch (err) {
+      App.showToast('❌ Failed to reset booking photo');
+    }
   },
 
   // 6. Reviews Tab
