@@ -15,6 +15,9 @@ const App = {
 
     // Initialize sub-modules
     await Gallery.init();
+    if (typeof FaceArt !== 'undefined' && FaceArt.init) {
+      await FaceArt.init();
+    }
     await Store.init();
     Booking.init();
     await Poetry.init();

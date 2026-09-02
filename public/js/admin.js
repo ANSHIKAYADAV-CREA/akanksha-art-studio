@@ -1279,165 +1279,103 @@ const Admin = {
 
   async renderFaceArts(container) {
     try {
-      const response = await fetch('/api/artworks');
+      const res = await API.getAdminFaceArts();
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(
-          result.message || 'Failed to load face arts'
-        );
+      if (!res.success) {
+        throw new Error(res.message || 'Failed to load face arts');
       }
 
-      const faceArts = (result.data || []).filter(
-        artwork =>
-          String(artwork.category || '').toLowerCase() ===
-          'face art'
-      );
+      const faceArts = Array.isArray(res.data) ? res.data : [];
+      const publishedCount = faceArts.filter(f => f.isPublished !== false).length;
 
       const escapeHtml = (value) => {
-        return String(value ?? '').replace(
-          /[&<>"']/g,
-          (character) => {
-            const entities = {
-              '&': '&amp;',
-              '<': '&lt;',
-              '>': '&gt;',
-              '"': '&quot;',
-              "'": '&#039;'
-            };
-
-            return entities[character];
-          }
-        );
+        return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[c]));
       };
 
       container.innerHTML = `
       <div>
-
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-          "
-        >
-
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 1.5rem;
+        ">
           <div>
-            <h3
-              style="
-                font-family: var(--font-serif);
-                font-size: 1.6rem;
-                margin-bottom: 0.4rem;
-              "
-            >
+            <h3 style="font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 0.4rem;">
               ✨ Face Art Gallery
             </h3>
-
-            <p
-              style="
-                font-size: 0.85rem;
-                color: var(--text-muted);
-              "
-            >
-              Upload and manage face painting designs
-              displayed on the public website.
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Pure image showcase for festival face painting and creative looks. Showing <strong>${publishedCount}</strong> of <strong>${faceArts.length}</strong> images on public gallery.
             </p>
           </div>
 
-          <button
-            class="btn btn-primary"
-            onclick="Admin.openAddFaceArt()"
-          >
+          <button class="btn btn-primary" onclick="Admin.openAddFaceArt()">
             + Upload Face Art
           </button>
-
         </div>
-
 
         ${faceArts.length === 0
           ? `
-              <div
-                style="
-                  background: white;
-                  border: 1px solid var(--border-pink);
-                  border-radius: var(--radius-md);
-                  padding: 3rem 1.5rem;
-                  text-align: center;
-                "
-              >
-                <div style="font-size: 3rem;">
-                  🎨
-                </div>
-
-                <h4
-                  style="
-                    font-family: var(--font-serif);
-                    margin: 1rem 0 0.5rem;
-                    font-size: 1.3rem;
-                  "
-                >
-                  No Face Arts Yet
-                </h4>
-
-                <p
-                  style="
-                    color: var(--text-muted);
-                    font-size: 0.9rem;
-                    margin-bottom: 1.25rem;
-                  "
-                >
-                  Upload your first face art design
-                  and it will appear on the public
-                  Face Art Gallery.
-                </p>
-
-                <button
-                  class="btn btn-primary"
-                  onclick="Admin.openAddFaceArt()"
-                >
-                  🎨 Upload First Face Art
-                </button>
-              </div>
-            `
+            <div style="
+              background: white;
+              border: 1px solid var(--border-pink);
+              border-radius: var(--radius-md);
+              padding: 3.5rem 1.5rem;
+              text-align: center;
+            ">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">🎨</div>
+              <h4 style="font-family: var(--font-serif); margin-bottom: 0.5rem; font-size: 1.3rem;">
+                No Face Arts Uploaded Yet
+              </h4>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Upload festival looks and creative face painting photographs to showcase on the public website.
+              </p>
+              <button class="btn btn-primary" onclick="Admin.openAddFaceArt()">
+                🎨 Upload First Face Art
+              </button>
+            </div>
+          `
           : `
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns:
-                    repeat(
-                      auto-fill,
-                      minmax(220px, 1fr)
-                    );
-                  gap: 1.25rem;
-                "
-              >
+            <div style="
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+              gap: 1.5rem;
+            ">
+              ${faceArts.map((art) => {
+                const isPub = art.isPublished !== false;
+                const safeId = escapeHtml(art.id);
+                const safeImg = escapeHtml(art.image);
 
-                ${faceArts.map((art) => `
-                  <div
-                    style="
-                      background: white;
-                      border: 1px solid var(--border-pink);
-                      border-radius: var(--radius-md);
+                return `
+                  <div style="
+                    background: white;
+                    border: 1px solid ${isPub ? 'var(--border-pink)' : '#e5e7eb'};
+                    border-radius: var(--radius-md);
+                    overflow: hidden;
+                    box-shadow: var(--shadow-sm);
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    opacity: ${isPub ? '1' : '0.85'};
+                  ">
+                    <div style="
+                      width: 100%;
+                      aspect-ratio: 1 / 1;
+                      background: var(--color-pink-50);
                       overflow: hidden;
-                      box-shadow: var(--shadow-sm);
-                    "
-                  >
-
-                    <div
-                      style="
-                        width: 100%;
-                        aspect-ratio: 1 / 1;
-                        background: var(--color-pink-50);
-                        overflow: hidden;
-                      "
-                    >
+                      position: relative;
+                    ">
                       <img
-                        src="${escapeHtml(art.image)}"
-                        alt="${escapeHtml(art.title)}"
+                        src="${safeImg}"
+                        alt="Face Art"
                         style="
                           width: 100%;
                           height: 100%;
@@ -1446,380 +1384,343 @@ const Admin = {
                         "
                         loading="lazy"
                       />
+                      <span style="
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        padding: 0.3rem 0.65rem;
+                        border-radius: 999px;
+                        backdrop-filter: blur(8px);
+                        ${isPub 
+                          ? 'background: rgba(34, 197, 94, 0.9); color: white;' 
+                          : 'background: rgba(107, 114, 128, 0.9); color: white;'
+                        }
+                      ">
+                        ${isPub ? '✓ Public' : 'Hidden'}
+                      </span>
                     </div>
 
-                    <div style="padding: 1rem;">
-
-                      <h4
-                        style="
-                          font-family: var(--font-serif);
-                          font-size: 1.1rem;
-                          margin-bottom: 0.35rem;
-                        "
-                      >
-                        ${escapeHtml(art.title)}
-                      </h4>
-
-                      <p
-                        style="
-                          color: var(--text-muted);
-                          font-size: 0.8rem;
-                          margin-bottom: 0.75rem;
-                        "
-                      >
-                        ${escapeHtml(
-            art.description ||
-            'Face painting artwork'
-          )}
-                      </p>
-
-                      <div
-                        style="
-                          display: flex;
-                          gap: 0.5rem;
-                          flex-wrap: wrap;
-                        "
-                      >
-
-                        <span
-                          style="
+                    <div style="padding: 1.1rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                      <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                          <span style="
                             font-size: 0.72rem;
-                            padding: 0.25rem 0.6rem;
-                            border-radius: 999px;
-                            background: var(--color-pink-50);
-                            color: var(--color-pink-600);
+                            font-family: var(--font-mono);
+                            color: var(--text-light);
+                          ">
+                            ${safeId}
+                          </span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">
+                          ${isPub ? '🟢 Visible on Public Website' : '⚪ Hidden from Public Website'}
+                        </div>
+                      </div>
+
+                      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button
+                          class="btn-table-action"
+                          style="
+                            flex: 1;
+                            font-size: 0.78rem;
+                            padding: 0.4rem 0.6rem;
+                            ${isPub 
+                              ? 'background: #f3f4f6; color: #4b5563;' 
+                              : 'background: var(--color-pink-50); color: var(--color-pink-600); border: 1px solid var(--border-pink);'
+                            }
                           "
+                          onclick="Admin.toggleFaceArtPublished('${safeId}', ${!isPub})"
                         >
-                          Face Art
-                        </span>
+                          ${isPub ? '🚫 Hide from Website' : '👁️ Show on Website'}
+                        </button>
 
                         <button
                           class="btn-table-action btn-table-danger"
-                          onclick="
-                            Admin.deleteFaceArt(
-                              '${escapeHtml(art.id)}'
-                            )
-                          "
+                          style="font-size: 0.78rem; padding: 0.4rem 0.75rem;"
+                          onclick="Admin.deleteFaceArt('${safeId}')"
                         >
                           Delete
                         </button>
-
                       </div>
-
                     </div>
-
                   </div>
-                `).join('')}
-
-              </div>
-            `
+                `;
+              }).join('')}
+            </div>
+          `
         }
-
       </div>
     `;
 
     } catch (error) {
-
-      console.error(
-        '❌ Failed to load face arts:',
-        error
-      );
-
+      console.error('❌ Failed to load face arts:', error);
       container.innerHTML = `
-      <div
-        style="
-          padding: 2rem;
-          text-align: center;
-        "
-      >
-        <h3>
-          Unable to load Face Art Gallery
-        </h3>
-
-        <p
-          style="
-            color: var(--text-muted);
-            margin: 0.75rem 0 1rem;
-          "
-        >
-          ${error.message}
-        </p>
-
-        <button
-          class="btn btn-primary"
-          onclick="Admin.switchTab('facearts')"
-        >
-          Try Again
-        </button>
-      </div>
-    `;
+        <div style="padding: 3rem 1.5rem; text-align: center;">
+          <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem;">
+            Unable to load Face Art Gallery
+          </h3>
+          <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
+            ${error.message}
+          </p>
+          <button class="btn btn-primary" onclick="Admin.switchTab('facearts')">
+            Try Again
+          </button>
+        </div>
+      `;
     }
   },
 
-
   async openAddFaceArt() {
-
-    const fileInput =
-      document.createElement('input');
-
+    const fileInput = document.createElement('input');
     fileInput.type = 'file';
-
-    fileInput.accept =
-      'image/jpeg,image/png,image/webp,image/jpg';
+    fileInput.accept = 'image/jpeg,image/png,image/webp,image/jpg';
 
     fileInput.onchange = async (event) => {
-
-      const file =
-        event.target.files[0];
-
+      const file = event.target.files[0];
       if (!file) {
-        App.showToast(
-          '❌ No image selected.'
-        );
-
+        App.showToast('❌ No image selected.');
         return;
       }
 
       if (!file.type.startsWith('image/')) {
-        App.showToast(
-          '❌ Please select a valid image.'
-        );
-
+        App.showToast('❌ Please select a valid image (JPG, PNG, WebP).');
         return;
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        App.showToast(
-          '❌ Image must be smaller than 10 MB.'
-        );
-
-        return;
-      }
-
-      const title = prompt(
-        'Face Art Title:',
-        'Festival Floral Face Art'
-      );
-
-      if (!title) {
-        return;
-      }
-
-      const description = prompt(
-        'Short Description:',
-        'Hand-painted festival face art with floral accents.'
-      );
-
-      if (description === null) {
+        App.showToast('❌ Image must be smaller than 10 MB.');
         return;
       }
 
       try {
+        App.showToast('⏳ Uploading face art to Cloudinary...');
 
-        App.showToast(
-          '⏳ Uploading face art to Cloudinary...'
-        );
+        // 1. Upload image to Cloudinary via existing endpoint
+        const formData = new FormData();
+        formData.append('image', file);
 
-        // ==========================================
-        // 1. UPLOAD IMAGE
-        // ==========================================
+        const uploadResponse = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData
+        });
 
-        const formData =
-          new FormData();
+        const uploadData = await uploadResponse.json();
 
-        formData.append(
-          'image',
-          file
-        );
-
-        const uploadResponse =
-          await fetch(
-            '/api/upload-image',
-            {
-              method: 'POST',
-              body: formData
-            }
-          );
-
-        const uploadData =
-          await uploadResponse.json();
-
-        if (
-          !uploadResponse.ok ||
-          !uploadData.success
-        ) {
-          throw new Error(
-            uploadData.message ||
-            'Image upload failed'
-          );
+        if (!uploadResponse.ok || !uploadData.success) {
+          throw new Error(uploadData.message || 'Cloudinary upload failed');
         }
 
-        const image =
-          uploadData.url;
-
-        const publicId =
-          uploadData.publicId;
+        const image = uploadData.url;
+        const publicId = uploadData.publicId || '';
 
         if (!image) {
-          throw new Error(
-            'Cloudinary did not return an image URL.'
-          );
+          throw new Error('Cloudinary did not return an image URL.');
         }
 
-        // ==========================================
-        // 2. SAVE FACE ART
-        // ==========================================
+        // 2. Save Face Art record via dedicated POST /api/face-arts
+        App.showToast('✅ Image uploaded! Saving face art showcase...');
 
-        App.showToast(
-          '✅ Image uploaded! Publishing face art...'
-        );
+        const saveRes = await API.addFaceArt({
+          image,
+          publicId,
+          isPublished: true
+        });
 
-        const artworkResponse =
-          await fetch(
-            '/api/artworks',
-            {
-              method: 'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-
-              body: JSON.stringify({
-                title: title,
-
-                category: 'Face Art',
-
-                medium:
-                  'Face Painting',
-
-                dimensions:
-                  'Face Art',
-
-                year:
-                  new Date()
-                    .getFullYear()
-                    .toString(),
-
-                price: 0,
-
-                image: image,
-
-                publicId: publicId || '',
-
-                description:
-                  description,
-
-                isSold: false,
-
-                isFeatured: true
-              })
-            }
-          );
-
-        const artworkData =
-          await artworkResponse.json();
-
-        if (
-          !artworkResponse.ok ||
-          !artworkData.success
-        ) {
-          throw new Error(
-            artworkData.message ||
-            'Face art could not be saved.'
-          );
+        if (!saveRes || !saveRes.success) {
+          throw new Error(saveRes.message || 'Face art could not be saved.');
         }
 
-        App.showToast(
-          '✨ Face art uploaded successfully!'
-        );
+        App.showToast('✨ Face art uploaded and published successfully!');
 
-        await this.renderFaceArts(
-          document.getElementById(
-            'adminTabContent'
-          )
-        );
+        // 3. Refresh Admin list & public Face Art Gallery if initialized
+        await this.renderFaceArts(document.getElementById('adminTabContent'));
+        if (typeof FaceArt !== 'undefined' && FaceArt.fetchFaceArts) {
+          FaceArt.fetchFaceArts();
+        }
 
       } catch (error) {
-
-        console.error(
-          '❌ FACE ART UPLOAD ERROR:',
-          error
-        );
-
-        App.showToast(
-          '❌ Face art upload failed: ' +
-          error.message
-        );
+        console.error('❌ FACE ART UPLOAD ERROR:', error);
+        App.showToast('❌ Face art upload failed: ' + error.message);
       }
     };
 
-    // IMPORTANT:
-    // Open file picker directly from
-    // the admin button click.
     fileInput.click();
   },
 
-
-  async deleteFaceArt(id) {
-
-    const confirmed =
-      confirm(
-        'Are you sure you want to delete this face art?'
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
+  async toggleFaceArtPublished(id, newStatus) {
     try {
+      App.showToast('⏳ Updating display status...');
+      const res = await API.updateFaceArt(id, { isPublished: newStatus });
 
-      App.showToast(
-        '⏳ Deleting face art...'
-      );
-
-      const response =
-        await fetch(
-          `/api/artworks/${encodeURIComponent(id)}`,
-          {
-            method: 'DELETE'
-          }
-        );
-
-      const result =
-        await response.json();
-
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-        throw new Error(
-          result.message ||
-          'Failed to delete face art.'
-        );
+      if (!res.success) {
+        throw new Error(res.message || 'Failed to update face art');
       }
 
-      App.showToast(
-        '🗑️ Face art deleted successfully.'
-      );
+      App.showToast(newStatus ? '✨ Visible on public website!' : '🚫 Hidden from public website.');
+      await this.renderFaceArts(document.getElementById('adminTabContent'));
 
-      await this.renderFaceArts(
-        document.getElementById(
-          'adminTabContent'
-        )
-      );
+      if (typeof FaceArt !== 'undefined' && FaceArt.fetchFaceArts) {
+        FaceArt.fetchFaceArts();
+      }
+    } catch (error) {
+      console.error('❌ TOGGLE PUBLISH ERROR:', error);
+      App.showToast('❌ Update failed: ' + error.message);
+    }
+  },
+
+  async deleteFaceArt(id) {
+    const confirmed = confirm('Are you sure you want to delete this face art image? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      App.showToast('⏳ Deleting face art...');
+
+      const res = await API.deleteFaceArt(id);
+      if (!res.success) {
+        throw new Error(res.message || 'Failed to delete face art.');
+      }
+
+      App.showToast('🗑️ Face art deleted successfully.');
+      await this.renderFaceArts(document.getElementById('adminTabContent'));
+
+      if (typeof FaceArt !== 'undefined' && FaceArt.fetchFaceArts) {
+        FaceArt.fetchFaceArts();
+      }
 
     } catch (error) {
+      console.error('❌ FACE ART DELETE ERROR:', error);
+      App.showToast('❌ Could not delete face art: ' + error.message);
+    }
+  },
 
-      console.error(
-        '❌ FACE ART DELETE ERROR:',
-        error
-      );
+  async toggleArtworkSold(id, isSold) {
+    try {
+      App.showToast('⏳ Updating artwork status...');
+      const res = await API.updateArtwork(id, { isSold });
+      if (!res.success) throw new Error(res.message || 'Update failed');
+      App.showToast(isSold ? '🏷️ Marked as Sold' : '✨ Marked as Available');
+      await this.renderArtworks(document.getElementById('adminTabContent'));
+      await Gallery.fetchArtworks();
+    } catch (err) {
+      console.error('Toggle sold error:', err);
+      App.showToast('❌ Update failed: ' + err.message);
+    }
+  },
 
-      App.showToast(
-        '❌ Could not delete face art: ' +
-        error.message
-      );
+  async deleteArtwork(id) {
+    if (!confirm('Are you sure you want to delete this artwork? This cannot be undone.')) return;
+    try {
+      App.showToast('⏳ Deleting artwork...');
+      const res = await API.deleteArtwork(id);
+      if (!res.success) throw new Error(res.message || 'Delete failed');
+      App.showToast('🗑️ Artwork deleted');
+      await this.renderArtworks(document.getElementById('adminTabContent'));
+      await Gallery.fetchArtworks();
+    } catch (err) {
+      console.error('Delete artwork error:', err);
+      App.showToast('❌ Could not delete: ' + err.message);
+    }
+  },
+
+  async deleteProduct(id) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      App.showToast('⏳ Deleting product...');
+      const res = await API.deleteProduct(id);
+      if (!res.success) throw new Error(res.message || 'Delete failed');
+      App.showToast('🗑️ Product deleted');
+      await this.renderProducts(document.getElementById('adminTabContent'));
+      await Store.fetchProducts();
+    } catch (err) {
+      console.error('Delete product error:', err);
+      App.showToast('❌ Could not delete: ' + err.message);
+    }
+  },
+
+  async updateBookingStatus(id, status) {
+    try {
+      App.showToast('⏳ Updating booking status...');
+      const res = await API.updateBooking(id, { status });
+      if (!res.success) throw new Error(res.message || 'Update failed');
+      App.showToast(`✅ Booking ${status}`);
+      await this.renderBookings(document.getElementById('adminTabContent'));
+    } catch (err) {
+      console.error('Update booking error:', err);
+      App.showToast('❌ Could not update booking: ' + err.message);
+    }
+  },
+
+  async deleteBooking(id) {
+    if (!confirm('Are you sure you want to delete this booking request?')) return;
+    try {
+      App.showToast('⏳ Deleting booking...');
+      const res = await API.deleteBooking(id);
+      if (!res.success) throw new Error(res.message || 'Delete failed');
+      App.showToast('🗑️ Booking deleted');
+      await this.renderBookings(document.getElementById('adminTabContent'));
+    } catch (err) {
+      console.error('Delete booking error:', err);
+      App.showToast('❌ Could not delete booking: ' + err.message);
+    }
+  },
+
+  async deletePoem(id) {
+    if (!confirm('Are you sure you want to delete this poem?')) return;
+    try {
+      App.showToast('⏳ Deleting poem...');
+      const res = await API.deletePoem(id);
+      if (!res.success) throw new Error(res.message || 'Delete failed');
+      App.showToast('🗑️ Poem deleted');
+      await this.renderPoems(document.getElementById('adminTabContent'));
+      await Poetry.fetchPoems();
+    } catch (err) {
+      console.error('Delete poem error:', err);
+      App.showToast('❌ Could not delete poem: ' + err.message);
+    }
+  },
+
+  async deleteReview(id) {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      App.showToast('⏳ Deleting review...');
+      const res = await API.deleteReview(id);
+      if (!res.success) throw new Error(res.message || 'Delete failed');
+      App.showToast('🗑️ Review deleted');
+      await this.renderReviews(document.getElementById('adminTabContent'));
+      if (typeof Reviews !== 'undefined' && Reviews.fetchReviews) {
+        await Reviews.fetchReviews();
+      }
+    } catch (err) {
+      console.error('Delete review error:', err);
+      App.showToast('❌ Could not delete review: ' + err.message);
+    }
+  },
+
+  async saveFacePaintingPricing(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {
+      fest: Number(formData.get('fest')) || 0,
+      editorial: Number(formData.get('editorial')) || 0,
+      bridal: Number(formData.get('bridal')) || 0,
+      private: Number(formData.get('private')) || 0,
+      extraGuest: Number(formData.get('extraGuest')) || 0
+    };
+
+    try {
+      App.showToast('⏳ Updating face painting pricing...');
+      const res = await API.updateFacePaintingPricing(data);
+      if (!res.success) throw new Error(res.message || 'Failed to update pricing');
+      App.showToast('✅ Face painting pricing updated successfully!');
+      if (typeof Booking !== 'undefined' && Booking.loadFacePaintingPricing) {
+        await Booking.loadFacePaintingPricing();
+        await Booking.calculateEstimate();
+      }
+    } catch (err) {
+      console.error('Update pricing error:', err);
+      App.showToast('❌ Update failed: ' + err.message);
     }
   }
 };

@@ -53,6 +53,13 @@ const API = {
   updateArtwork: (id, data) => API.request(`/api/artworks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteArtwork: (id) => API.request(`/api/artworks/${id}`, { method: 'DELETE' }),
 
+  // Face Arts (Dedicated Image Showcase)
+  getFaceArts: () => API.request('/api/face-arts'),
+  getAdminFaceArts: () => API.request('/api/admin/face-arts'),
+  addFaceArt: (data) => API.request('/api/face-arts', { method: 'POST', body: JSON.stringify(data) }),
+  updateFaceArt: (id, data) => API.request(`/api/face-arts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFaceArt: (id) => API.request(`/api/face-arts/${id}`, { method: 'DELETE' }),
+
   // Products
   getProducts: () => API.request('/api/products'),
   addProduct: (data) => API.request('/api/products', { method: 'POST', body: JSON.stringify(data) }),
@@ -102,40 +109,62 @@ const API = {
   sendContact: (data) => API.request('/api/contact', { method: 'POST', body: JSON.stringify(data) }),
 
 
-  // Local storage fallback handler in case server isn't running
+  // Offline/local fallback handler (only used when network/server is totally unreachable)
   localFallback(endpoint, options) {
     const method = options.method || 'GET';
     const key = 'akanksha_local_db';
-    let db = JSON.parse(localStorage.getItem(key) || 'null');
+    let db = null;
+    try {
+      db = JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (e) {
+      db = null;
+    }
 
     if (!db) {
       db = {
-        settings: {
-          name: "Akanksha",
-          institution: "",
-          email: "akankshachandreshwar@gmail.com",
-          phone: "9517155681",
-          instagramPrimary: "@_akanxha",
-          instagramSecondary: "@psychotichic",
-          bioQuote: "A young artist driven by the desire to create a colourful canvas of life. I welcome you to my little corner, where you can explore my work, discover the stories woven into every creation, and become a part of this ever-evolving journey of expression.",
-          announcement: "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping Across India ✨"
-        },
+        settings: {},
         artworks: [],
+        faceArts: [],
         products: [],
         bookings: [],
         poems: [],
         reviews: [],
         orders: []
       };
-      localStorage.setItem(key, JSON.stringify(db));
     }
 
     if (endpoint === '/api/settings') {
       if (method === 'PUT') {
         db.settings = { ...db.settings, ...JSON.parse(options.body || '{}') };
-        localStorage.setItem(key, JSON.stringify(db));
+        try { localStorage.setItem(key, JSON.stringify(db)); } catch (e) {}
       }
-      return { success: true, data: db.settings };
+      return { success: true, data: db.settings || {} };
     }
-}
+
+    if (endpoint === '/api/artworks') {
+      return { success: true, data: db.artworks || [] };
+    }
+
+    if (endpoint === '/api/face-arts') {
+      return { success: true, data: (db.faceArts || []).filter(f => f.isPublished !== false) };
+    }
+
+    if (endpoint === '/api/admin/face-arts') {
+      return { success: true, data: db.faceArts || [] };
+    }
+
+    if (endpoint === '/api/products') {
+      return { success: true, data: db.products || [] };
+    }
+
+    if (endpoint === '/api/poems') {
+      return { success: true, data: db.poems || [] };
+    }
+
+    if (endpoint === '/api/reviews') {
+      return { success: true, data: db.reviews || [] };
+    }
+
+    return { success: false, data: [], message: 'Offline request.' };
+  }
 };

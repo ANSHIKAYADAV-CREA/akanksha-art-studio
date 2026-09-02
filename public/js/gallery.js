@@ -3,6 +3,25 @@
  * Handles Artworks rendering, category filters, search, and Lightbox modal.
  */
 
+// Normalization mapper for backward and forward compatibility
+function mapArtwork(item) {
+  if (!item) return null;
+  return {
+    id: item.id || `art-${Date.now()}`,
+    title: item.title || item.name || 'Untitled Artwork',
+    category: item.category || item.cat || 'Canvas Paintings',
+    medium: item.medium || 'Acrylic on Canvas',
+    dimensions: item.dimensions || item.ratio || '24 x 36 inches',
+    year: item.year ? String(item.year) : new Date().getFullYear().toString(),
+    price: Number(item.price) || 0,
+    image: item.image || item.img || '',
+    publicId: item.publicId || '',
+    description: item.description || '',
+    isSold: Boolean(item.isSold),
+    isFeatured: Boolean(item.isFeatured)
+  };
+}
+
 const Gallery = {
   artworks: [],
   currentFilter: 'all',
@@ -12,31 +31,51 @@ const Gallery = {
     await this.fetchArtworks();
     this.bindEvents();
   },
+
   async fetchArtworks() {
+    try {
+      const res = await API.getArtworks();
+      console.log('ARTWORK API:', res);
 
-    const res = await API.getArtworks();
+      const rawArtworks = Array.isArray(res?.data)
+        ? res.data
+        : (Array.isArray(res) ? res : []);
 
-    if (res.success && res.data) {
+      console.log('ARTWORK COUNT:', rawArtworks.length);
 
-      this.artworks = res.data.filter(function (artwork) {
-
-        const category =
-          String(artwork.category || '')
+      this.artworks = rawArtworks
+        .map(mapArtwork)
+        .filter(artwork => {
+          if (!artwork || !artwork.image) return false;
+          const category = String(artwork.category || '')
             .trim()
             .toLowerCase();
 
-        return !(
-          category === 'face art' ||
-          category === 'face painting' ||
-          category.includes('face art')
-        );
-
-      });
+          // Face Art has its own dedicated showcase
+          return !(
+            category === 'face art' ||
+            category === 'face painting' ||
+            category.includes('face art')
+          );
+        });
 
       this.render();
-
+    } catch (error) {
+      console.error('❌ Failed to fetch artworks:', error);
+      const grid = document.getElementById('galleryGrid');
+      if (grid && this.artworks.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 4rem 1rem;">
+            <p style="font-family: var(--font-editorial); font-size: 1.5rem; color: var(--text-muted); font-style: italic;">
+              Unable to load gallery right now.
+            </p>
+            <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" onclick="Gallery.fetchArtworks()">
+              🔄 Try Again
+            </button>
+          </div>
+        `;
+      }
     }
-
   },
 
   bindEvents() {
@@ -101,14 +140,18 @@ const Gallery = {
       return;
     }
 
-    grid.innerHTML = filtered.map(art => `
+    grid.innerHTML = filtered.map(art => {
+      const safeTitle = art.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const safeImg = art.image.replace(/'/g, "\\'");
+
+      return `
       <div class="artwork-card" data-id="${art.id}">
         <div class="artwork-img-wrap" onclick="Gallery.openLightbox('${art.id}')" style="cursor: pointer;">
-          <img src="${art.image}" alt="${art.title}" class="artwork-img" loading="lazy" />
+          <img src="${art.image}" alt="${art.title}" class="artwork-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80'" />
           ${art.isSold
-        ? `<span class="artwork-badge-sold">Sold Out</span>`
-        : `<span class="artwork-badge-cat">${art.category}</span>`
-      }
+            ? `<span class="artwork-badge-sold">Sold Out</span>`
+            : `<span class="artwork-badge-cat">${art.category}</span>`
+          }
         </div>
         <div class="artwork-info">
           <h3 class="artwork-title" onclick="Gallery.openLightbox('${art.id}')" style="cursor: pointer;">
@@ -123,18 +166,19 @@ const Gallery = {
                 🔍 Details
               </button>
               ${!art.isSold
-        ? `<button class="btn btn-primary btn-sm" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork')">
+                ? `<button class="btn btn-primary btn-sm" onclick="Store.addToCart('${art.id}', '${safeTitle}', ${art.price}, '${safeImg}', 'Original Artwork')">
                     Add to Bag
                    </button>`
-        : `<button class="btn btn-earth btn-sm" onclick="App.openCommissionModal('${art.title.replace(/'/g, "\\'")}')">
+                : `<button class="btn btn-earth btn-sm" onclick="App.openCommissionModal('${safeTitle}')">
                     Inquire Similar
                    </button>`
-      }
+              }
             </div>
           </div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   },
 
   openLightbox(id) {
@@ -145,10 +189,13 @@ const Gallery = {
     const modalContent = document.getElementById('artworkModalContent');
     if (!modal || !modalContent) return;
 
+    const safeTitle = art.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeImg = art.image.replace(/'/g, "\\'");
+
     modalContent.innerHTML = `
       <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 2rem; align-items: center;">
         <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-md);">
-          <img src="${art.image}" alt="${art.title}" style="width: 100%; max-height: 520px; object-fit: cover;" />
+          <img src="${art.image}" alt="${art.title}" style="width: 100%; max-height: 520px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80'" />
           ${art.isSold ? '<span class="artwork-badge-sold" style="top: 15px; right: 15px;">Sold Out</span>' : ''}
         </div>
         <div>
@@ -177,14 +224,14 @@ const Gallery = {
           </div>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             ${!art.isSold
-        ? `<button class="btn btn-primary" style="flex: 1;" onclick="Store.addToCart('${art.id}', '${art.title.replace(/'/g, "\\'")}', ${art.price}, '${art.image}', 'Original Artwork'); App.closeModal('artworkModal');">
+              ? `<button class="btn btn-primary" style="flex: 1;" onclick="Store.addToCart('${art.id}', '${safeTitle}', ${art.price}, '${safeImg}', 'Original Artwork'); App.closeModal('artworkModal');">
                   🛍️ Add to Cart & Checkout
                  </button>`
-        : `<button class="btn btn-earth" style="flex: 1;" onclick="App.closeModal('artworkModal'); App.openCommissionModal('${art.title.replace(/'/g, "\\'")}');">
+              : `<button class="btn btn-earth" style="flex: 1;" onclick="App.closeModal('artworkModal'); App.openCommissionModal('${safeTitle}');">
                   ✨ Commission a Similar Piece
                  </button>`
-      }
-            <button class="btn btn-secondary" onclick="App.shareLink('${art.title}', window.location.href)">
+            }
+            <button class="btn btn-secondary" onclick="App.shareLink('${safeTitle}', window.location.href)">
               🔗 Share
             </button>
           </div>

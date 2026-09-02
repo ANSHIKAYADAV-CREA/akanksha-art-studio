@@ -4,6 +4,10 @@ const path = require('path');
 const {
   readDB,
   writeDB,
+  saveItem,
+  deleteItem,
+  saveSettings,
+  saveFacePaintingPricing,
   initDatabase,
   isDatabaseReady
 } = require('./database');
@@ -45,19 +49,23 @@ function generateId(prefix = 'id') {
 // -------------------------------------------------------------
 app.get('/api/settings', (req, res) => {
   const db = readDB();
-  const { adminPin, ...publicSettings } = db.settings;
+  const { adminPin, ...publicSettings } = db.settings || {};
   res.json({ success: true, data: publicSettings });
 });
 
-app.put('/api/settings', (req, res) => {
-  const db = readDB();
-  db.settings = {
-    ...db.settings,
-    ...req.body
-  };
-  writeDB(db);
-  const { adminPin, ...publicSettings } = db.settings;
-  res.json({ success: true, data: publicSettings, message: "Settings updated successfully" });
+app.put('/api/settings', async (req, res) => {
+  try {
+    const db = readDB();
+    const updated = {
+      ...(db.settings || {}),
+      ...req.body
+    };
+    await saveSettings(updated);
+    const { adminPin, ...publicSettings } = updated;
+    res.json({ success: true, data: publicSettings, message: "Settings updated successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to update settings", error: err.message });
+  }
 });
 
 // -------------------------------------------------------------
@@ -134,58 +142,105 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
   }
 });
 // -------------------------------------------------------------
-// ARTWORKS API
+// ARTWORKS API (Normal Artworks / Canvas Paintings)
 // -------------------------------------------------------------
 app.get('/api/artworks', (req, res) => {
   const db = readDB();
-  res.json({ success: true, data: db.artworks || [] });
+  const artworks = (db.artworks || []).filter(artwork => {
+    const category = String(artwork.category || '').trim().toLowerCase();
+    return !(
+      category === 'face art' ||
+      category === 'face painting' ||
+      category.includes('face art')
+    );
+  });
+  res.json({ success: true, data: artworks });
 });
 
-app.post('/api/artworks', (req, res) => {
-  const db = readDB();
-  const newArtwork = {
-    id: generateId('art'),
-    title: req.body.title || 'Untitled Artwork',
-    category: req.body.category || 'Canvas Paintings',
-    medium: req.body.medium || 'Acrylic on Canvas',
-    dimensions: req.body.dimensions || '24 x 36 inches',
-    year: req.body.year || new Date().getFullYear().toString(),
-    price: Number(req.body.price) || 0,
-    image: req.body.image || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80',
-    publicId: req.body.publicId || '',
-    description: req.body.description || '',
-    isSold: Boolean(req.body.isSold),
-    isFeatured: Boolean(req.body.isFeatured)
-  };
-  db.artworks.unshift(newArtwork);
-  writeDB(db);
-  res.status(201).json({ success: true, data: newArtwork, message: "Artwork added successfully" });
-});
+app.post('/api/artworks', async (req, res) => {
+  try {
+    const {
+      title,
+      category,
+      medium,
+      dimensions,
+      year,
+      price,
+      image,
+      publicId,
+      description,
+      isSold,
+      isFeatured
+    } = req.body;
 
-app.put('/api/artworks/:id', (req, res) => {
-  const db = readDB();
-  const index = db.artworks.findIndex(a => a.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Artwork not found" });
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: 'Artwork image is required.'
+      });
+    }
+
+    const newArtwork = {
+      id: generateId('art'),
+      title: title ? String(title).trim() : 'Untitled Artwork',
+      category: category || 'Canvas Paintings',
+      medium: medium || 'Acrylic on Canvas',
+      dimensions: dimensions || '24 x 36 inches',
+      year: year ? String(year) : new Date().getFullYear().toString(),
+      price: Number(price) || 0,
+      image: image,
+      publicId: publicId || '',
+      description: description ? String(description).trim() : '',
+      isSold: Boolean(isSold),
+      isFeatured: Boolean(isFeatured)
+    };
+
+    await saveItem('artworks', newArtwork);
+    console.log('🎨 Artwork saved to database:', newArtwork.id, newArtwork.title);
+
+    res.status(201).json({
+      success: true,
+      data: newArtwork,
+      message: 'Artwork added successfully'
+    });
+  } catch (err) {
+    console.error('❌ Add artwork error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add artwork',
+      error: err.message
+    });
   }
-  db.artworks[index] = {
-    ...db.artworks[index],
-    ...req.body,
-    price: req.body.price !== undefined ? Number(req.body.price) : db.artworks[index].price,
-    isSold: req.body.isSold !== undefined ? Boolean(req.body.isSold) : db.artworks[index].isSold,
-    isFeatured: req.body.isFeatured !== undefined ? Boolean(req.body.isFeatured) : db.artworks[index].isFeatured
-  };
-  writeDB(db);
-  res.json({ success: true, data: db.artworks[index], message: "Artwork updated successfully" });
+});
+
+app.put('/api/artworks/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const existing = (db.artworks || []).find(a => a.id === req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Artwork not found' });
+    }
+
+    const updated = {
+      ...existing,
+      ...req.body,
+      price: req.body.price !== undefined ? Number(req.body.price) : existing.price,
+      isSold: req.body.isSold !== undefined ? Boolean(req.body.isSold) : existing.isSold,
+      isFeatured: req.body.isFeatured !== undefined ? Boolean(req.body.isFeatured) : existing.isFeatured
+    };
+
+    await saveItem('artworks', updated);
+    res.json({ success: true, data: updated, message: 'Artwork updated successfully' });
+  } catch (err) {
+    console.error('❌ Update artwork error:', err);
+    res.status(500).json({ success: false, message: 'Failed to update artwork', error: err.message });
+  }
 });
 
 app.delete('/api/artworks/:id', async (req, res) => {
   try {
     const db = readDB();
-
-    const index = db.artworks.findIndex(
-      artwork => artwork.id === req.params.id
-    );
+    const index = (db.artworks || []).findIndex(a => a.id === req.params.id);
 
     if (index === -1) {
       return res.status(404).json({
@@ -196,129 +251,199 @@ app.delete('/api/artworks/:id', async (req, res) => {
 
     const artwork = db.artworks[index];
 
-    // =====================================================
-    // 1. GET CLOUDINARY PUBLIC ID
-    // =====================================================
-
+    // Extract Cloudinary public ID if available
     let publicId = artwork.publicId || '';
-
-    // For OLD artworks that don't have publicId saved,
-    // try to extract it from the Cloudinary image URL.
-    if (!publicId && artwork.image) {
+    if (!publicId && artwork.image && artwork.image.includes('res.cloudinary.com')) {
       try {
-        const imageUrl = artwork.image;
-
-        if (imageUrl.includes('res.cloudinary.com')) {
-          const uploadMarker = '/upload/';
-
-          const uploadIndex = imageUrl.indexOf(uploadMarker);
-
-          if (uploadIndex !== -1) {
-            let cloudinaryPath =
-              imageUrl.substring(
-                uploadIndex + uploadMarker.length
-              );
-
-            // Remove version, e.g. v1234567890/
-            cloudinaryPath = cloudinaryPath.replace(
-              /^v\d+\//,
-              ''
-            );
-
-            // Remove file extension
-            cloudinaryPath = cloudinaryPath.replace(
-              /\.[^/.]+$/,
-              ''
-            );
-
-            publicId = cloudinaryPath;
-          }
+        const uploadMarker = '/upload/';
+        const uploadIndex = artwork.image.indexOf(uploadMarker);
+        if (uploadIndex !== -1) {
+          let cloudinaryPath = artwork.image.substring(uploadIndex + uploadMarker.length);
+          cloudinaryPath = cloudinaryPath.replace(/^v\d+\//, '');
+          cloudinaryPath = cloudinaryPath.replace(/\.[^/.]+$/, '');
+          publicId = cloudinaryPath;
         }
       } catch (extractError) {
-        console.error(
-          '⚠️ Could not extract Cloudinary public ID:',
-          extractError.message
-        );
+        console.warn('⚠️ Could not extract Cloudinary public ID:', extractError.message);
       }
     }
-
-    console.log('🆔 Artwork Public ID:', publicId || 'NONE');
-
-    // =====================================================
-    // 2. DELETE IMAGE FROM CLOUDINARY
-    // =====================================================
 
     if (publicId) {
       try {
-        console.log(
-          '☁️ Deleting image from Cloudinary:',
-          publicId
-        );
-
-        const cloudinaryResult =
-          await cloudinary.uploader.destroy(
-            publicId,
-            {
-              resource_type: 'image'
-            }
-          );
-
-        console.log(
-          '☁️ Cloudinary delete result:',
-          cloudinaryResult
-        );
-
+        console.log('☁️ Deleting artwork image from Cloudinary:', publicId);
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
       } catch (cloudinaryError) {
-
-        console.error(
-          '❌ Cloudinary delete failed:',
-          cloudinaryError.message
-        );
-
-        return res.status(500).json({
-          success: false,
-          message:
-            'Artwork was not deleted because its Cloudinary image could not be deleted.',
-          error: cloudinaryError.message
-        });
+        console.warn('⚠️ Cloudinary delete warning:', cloudinaryError.message);
       }
-
-    } else {
-      console.log(
-        'ℹ️ No Cloudinary image found for this artwork.'
-      );
     }
 
-    // =====================================================
-    // 3. DELETE ARTWORK FROM FIRESTORE / DATABASE
-    // =====================================================
-
-    db.artworks.splice(index, 1);
-
-    writeDB(db);
-
-    console.log(
-      '🗑️ Artwork permanently deleted:',
-      artwork.id
-    );
+    await deleteItem('artworks', req.params.id);
+    console.log('🗑️ Artwork permanently deleted:', artwork.id);
 
     res.json({
       success: true,
       data: artwork,
-      message:
-        'Artwork and associated Cloudinary image deleted successfully'
+      message: 'Artwork deleted successfully'
     });
-
   } catch (error) {
-
-    console.error(
-      '❌ Artwork delete error:',
-      error
-    );
-
+    console.error('❌ Artwork delete error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete artwork',
+      error: error.message
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// FACE ART GALLERY API (Dedicated Image Showcase)
+// -------------------------------------------------------------
+
+// Public: Only returns published face arts (pure image showcase)
+app.get('/api/face-arts', (req, res) => {
+  const db = readDB();
+  const faceArts = (db.faceArts || [])
+    .filter(item => item.isPublished !== false && item.image)
+    .map(item => ({
+      id: item.id,
+      image: item.image
+    }));
+
+  res.json({ success: true, data: faceArts });
+});
+
+// Admin: Returns all face arts with internal/publication metadata
+app.get('/api/admin/face-arts', (req, res) => {
+  const db = readDB();
+  res.json({ success: true, data: db.faceArts || [] });
+});
+
+// Admin: Upload new face art record
+app.post('/api/face-arts', async (req, res) => {
+  try {
+    const { image, publicId, isPublished } = req.body;
+
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: 'Face art image is required.'
+      });
+    }
+
+    const newFaceArt = {
+      id: generateId('faceart'),
+      image: String(image).trim(),
+      publicId: publicId ? String(publicId).trim() : '',
+      isPublished: isPublished !== undefined ? Boolean(isPublished) : true,
+      createdAt: new Date().toISOString()
+    };
+
+    await saveItem('faceArts', newFaceArt);
+    console.log('✨ Face Art record saved:', newFaceArt.id);
+
+    res.status(201).json({
+      success: true,
+      data: newFaceArt,
+      message: 'Face art uploaded successfully'
+    });
+  } catch (error) {
+    console.error('❌ Save face art error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save face art',
+      error: error.message
+    });
+  }
+});
+
+// Admin: Toggle publish status or update face art
+app.put('/api/face-arts/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const existing = (db.faceArts || []).find(f => f.id === req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Face art not found'
+      });
+    }
+
+    const updated = {
+      ...existing,
+      isPublished: req.body.isPublished !== undefined ? Boolean(req.body.isPublished) : existing.isPublished
+    };
+
+    await saveItem('faceArts', updated);
+    console.log(`✨ Face art ${updated.id} publish status changed to:`, updated.isPublished);
+
+    res.json({
+      success: true,
+      data: updated,
+      message: `Face art ${updated.isPublished ? 'published on' : 'hidden from'} public website`
+    });
+  } catch (error) {
+    console.error('❌ Update face art error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update face art',
+      error: error.message
+    });
+  }
+});
+
+// Admin: Delete face art and delete its Cloudinary image
+app.delete('/api/face-arts/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const faceArt = (db.faceArts || []).find(f => f.id === req.params.id);
+
+    if (!faceArt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Face art not found'
+      });
+    }
+
+    // Extract Cloudinary public ID if available
+    let publicId = faceArt.publicId || '';
+    if (!publicId && faceArt.image && faceArt.image.includes('res.cloudinary.com')) {
+      try {
+        const uploadMarker = '/upload/';
+        const uploadIndex = faceArt.image.indexOf(uploadMarker);
+        if (uploadIndex !== -1) {
+          let cloudinaryPath = faceArt.image.substring(uploadIndex + uploadMarker.length);
+          cloudinaryPath = cloudinaryPath.replace(/^v\d+\//, '');
+          cloudinaryPath = cloudinaryPath.replace(/\.[^/.]+$/, '');
+          publicId = cloudinaryPath;
+        }
+      } catch (extractError) {
+        console.warn('⚠️ Could not extract Cloudinary public ID for face art:', extractError.message);
+      }
+    }
+
+    if (publicId) {
+      try {
+        console.log('☁️ Deleting Face Art image from Cloudinary:', publicId);
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+      } catch (cloudinaryError) {
+        console.warn('⚠️ Cloudinary delete warning for face art:', cloudinaryError.message);
+      }
+    }
+
+    await deleteItem('faceArts', req.params.id);
+    console.log('🗑️ Face Art permanently deleted:', faceArt.id);
+
+    res.json({
+      success: true,
+      data: faceArt,
+      message: 'Face art deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Delete face art error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete face art',
       error: error.message
     });
   }
@@ -513,70 +638,6 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/artworks/:id', async (req, res) => {
-  try {
-    const db = readDB();
-
-    const index = db.artworks.findIndex(
-      artwork => artwork.id === req.params.id
-    );
-
-    if (index === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Artwork not found'
-      });
-    }
-
-    const artwork = db.artworks[index];
-
-    // Delete image from Cloudinary first
-    if (artwork.publicId) {
-      try {
-        const cloudinaryResult = await cloudinary.uploader.destroy(
-          artwork.publicId,
-          {
-            resource_type: 'image'
-          }
-        );
-
-        console.log('☁️ Cloudinary delete result:', cloudinaryResult);
-      } catch (cloudinaryError) {
-        console.error(
-          '❌ Cloudinary delete failed:',
-          cloudinaryError.message
-        );
-
-        return res.status(500).json({
-          success: false,
-          message: 'Could not delete the artwork image from Cloudinary.',
-          error: cloudinaryError.message
-        });
-      }
-    }
-
-    // Delete artwork record from database
-    db.artworks.splice(index, 1);
-    writeDB(db);
-
-    console.log('🗑️ Artwork permanently deleted:', artwork.id);
-
-    res.json({
-      success: true,
-      data: artwork,
-      message: 'Artwork and Cloudinary image permanently deleted'
-    });
-
-  } catch (error) {
-    console.error('❌ Artwork delete error:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete artwork',
-      error: error.message
-    });
-  }
-});
 
 // -------------------------------------------------------------
 // FACE PAINTING BOOKINGS API
@@ -990,6 +1051,8 @@ app.get('/api/admin/stats', (req, res) => {
   const db = readDB();
   const totalArtworks = (db.artworks || []).length;
   const availableArtworks = (db.artworks || []).filter(a => !a.isSold).length;
+  const totalFaceArts = (db.faceArts || []).length;
+  const publishedFaceArts = (db.faceArts || []).filter(f => f.isPublished !== false).length;
   const totalProducts = (db.products || []).length;
   const totalBookings = (db.bookings || []).length;
   const pendingBookings = (db.bookings || []).filter(b => b.status === 'Pending').length;
@@ -1003,6 +1066,8 @@ app.get('/api/admin/stats', (req, res) => {
     data: {
       totalArtworks,
       availableArtworks,
+      totalFaceArts,
+      publishedFaceArts,
       totalProducts,
       totalBookings,
       pendingBookings,
