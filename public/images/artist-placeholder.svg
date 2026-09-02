@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0F5" />
+      <stop offset="50%" stop-color="#FFE4EC" />
+      <stop offset="100%" stop-color="#FCE7EB" />
+    </linearGradient>
+    <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F687B3" />
+      <stop offset="100%" stop-color="#D53F8C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="800" height="1000" fill="url(#bgGrad)" />
+
+  <!-- Subtle Framing Pattern -->
+  <rect x="30" y="30" width="740" height="940" fill="none" stroke="#E2B2C4" stroke-width="2" stroke-dasharray="8 8" rx="16" />
+
+  <!-- Decorative Paint Splatters / Botanical Circles -->
+  <circle cx="200" cy="220" r="140" fill="#FFF" opacity="0.6" />
+  <circle cx="620" cy="300" r="90" fill="#FED7E2" opacity="0.8" />
+  <circle cx="160" cy="780" r="110" fill="#FBB6CE" opacity="0.4" />
+
+  <!-- Silhouette Icon Area -->
+  <g transform="translate(400, 430)">
+    <!-- Palette / Halo -->
+    <ellipse cx="0" cy="-60" rx="150" ry="160" fill="#FFF" opacity="0.85" />
+    <!-- Head -->
+    <circle cx="0" cy="-90" r="85" fill="url(#avatarGrad)" opacity="0.9" />
+    <!-- Shoulders -->
+    <path d="M-150,140 C-140,40 -60,20 0,20 C60,20 140,40 150,140 Z" fill="url(#avatarGrad)" opacity="0.8" />
+    <!-- Brush motif -->
+    <path d="M70,-170 L110,-210 C116,-216 126,-216 132,-210 C138,-204 138,-194 132,-188 L92,-148 Z" fill="#9B2C2C" />
+    <path d="M65,-165 L50,-150 L85,-140 Z" fill="#D69E2E" />
+  </g>
+
+  <!-- Typography -->
+  <text x="400" y="690" font-family="'Cinzel', 'Playfair Display', Georgia, serif" font-size="34" font-weight="700" fill="#702459" text-anchor="middle" letter-spacing="3">
+    AKAMATO€
+  </text>
+  <text x="400" y="735" font-family="'Cormorant Garamond', Georgia, serif" font-style="italic" font-size="24" fill="#97266D" text-anchor="middle" letter-spacing="1">
+    unwearied creation
+  </text>
+  <text x="400" y="790" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="500" fill="#A0AEC0" text-anchor="middle" letter-spacing="1">
+    Main Artist Portrait Placeholder
+  </text>
+  <rect x="250" y="815" width="300" height="42" rx="21" fill="#FFF" stroke="#E2B2C4" stroke-width="1.5" />
+  <text x="400" y="842" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#B83280" text-anchor="middle">
+    📸 Upload via Admin Studio Portal
+  </text>
+</svg>

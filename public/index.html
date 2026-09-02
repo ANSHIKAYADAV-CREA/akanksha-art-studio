@@ -4,16 +4,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Akanksha | Artist Portfolio & Aesthetic Store</title>
+  <title>AKAMATOE | unwearied creation</title>
   <meta name="description"
-    content="Official portfolio and aesthetic store of Akanksha, artist and creative writer. Original paintings, bespoke face painting bookings, poetry zines, and wearable art." />
-
-  <!-- Favicon -->
+    content="Official portfolio and aesthetic studio of AKAMATOE. Original fine art paintings, bespoke face painting bookings, and handcrafted artifacts." />
+  <meta name="keywords"
+    content="AKAMATOE, art studio, face painting, Delhi artist, fine art, Hindu College University of Delhi, canvas paintings, artifacts" />
   <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%22100%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
 
-  <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css" />
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet">
+
+  <!-- Core & Component Styles -->
+  <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/admin.css" />
 
@@ -26,21 +33,18 @@
   <!-- Site Header & Navigation -->
   <header class="site-header" id="siteHeader">
     <div class="container header-inner">
-      <a href="#home" class="brand-logo" title="Akanksha Studio">
-        <span class="brand-name dyn-name">AKANKSHA</span>
-        <span class="brand-sub">Studio & Gallery </span>
+      <a href="#home" class="brand-logo" title="AKAMATOE">
+        <span class="brand-name dyn-name">AKAMATOE</span>
+        <span class="brand-sub dyn-tagline">unwearied creation</span>
       </a>
 
       <!-- Desktop Navigation -->
       <nav>
         <ul class="nav-links">
           <li><a href="#home" class="nav-link">Home</a></li>
-          <li><a href="#gallery" class="nav-link">Art Gallery</a></li>
-          <li><a href="#faceart-gallery" class="nav-link"> Face Art Gallery</a> </li>
-          <li><a href="#facepainting" class="nav-link">Face Painting</a></li>
-          <li><a href="#poetry" class="nav-link">Poetry & Books</a></li>
+          <li><a href="#gallery" class="nav-link">Art</a></li>
+          <li><a href="#faceart-gallery" class="nav-link">Face Art Gallery</a></li>
           <li><a href="#store" class="nav-link">Artifacts Store</a></li>
-          <li><a href="#reviews" class="nav-link">Reviews</a></li>
           <li><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
       </nav>
@@ -80,19 +84,16 @@
   <div class="nav-drawer" id="navDrawer">
     <div
       style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
-      <span class="brand-name dyn-name" style="font-size: 1.4rem;">AKANKSHA</span>
+      <span class="brand-name dyn-name" style="font-size: 1.4rem;">AKAMATOE</span>
       <button id="closeNavDrawer"
         style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">✕</button>
     </div>
     <ul class="nav-links-mobile">
       <li><a href="#home" class="nav-link">Home</a></li>
-      <li><a href="#gallery" class="nav-link">Art Gallery</a></li>
+      <li><a href="#gallery" class="nav-link">Art</a></li>
       <li><a href="#faceart-gallery" class="nav-link">Face Art Gallery</a></li>
-      <li><a href="#facepainting" class="nav-link">Face Painting Bookings</a></li>
-      <li><a href="#poetry" class="nav-link">Poetry & Books</a></li>
       <li><a href="#store" class="nav-link">Artifacts Store</a></li>
-      <li><a href="#reviews" class="nav-link">Collector Reviews</a></li>
-      <li><a href="#contact" class="nav-link">Get in Touch</a></li>
+      <li><a href="#contact" class="nav-link">Contact</a></li>
     </ul>
     <div style="margin-top: auto; display: flex; flex-direction: column; gap: 0.75rem;">
       <button class="btn btn-primary"
@@ -117,10 +118,10 @@
             <div class="artist-polaroid-frame">
               <div class="washi-tape"></div>
               <div class="artist-photo-container">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80"
-                  alt="Akanksha - Artist Portrait" class="artist-photo dyn-artist-img" id="mainArtistPortrait" />
+                <img src="images/artist-placeholder.svg"
+                  alt="AKAMATOE - Artist Portrait" class="artist-photo dyn-artist-img" id="mainArtistPortrait" />
               </div>
-              <div class="polaroid-caption dyn-name">Akanksha</div>
+              <div class="polaroid-caption dyn-name">AKAMATOE</div>
 
 
               <!-- Instagram Tags & Admin Upload Shortcut -->
@@ -137,9 +138,6 @@
 
               </div>
 
-
-
-
               <!-- Floating Badges -->
               <div class="floating-pill-badge badge-top-right">
                 <span>🎨</span>
@@ -149,12 +147,12 @@
             </div>
           </div>
 
-          <!-- Right Column: Statement, Quote & Action CTAs -->
+          <!-- Right Column: Statement, Quote & Branding -->
           <div class="hero-narrative-wrap">
 
-
             <h1 class="hero-editorial-title">
-              Creating a <span class="highlight">colourful</span> canvas of life.
+              <span class="dyn-name" style="display: block; font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); letter-spacing: 2px;">AKAMATOE</span>
+              <span class="hero-brand-tagline dyn-tagline" style="display: block; font-size: 1.5rem; font-family: var(--font-editorial, var(--font-serif)); color: var(--color-pink-600); margin-top: 0.5rem; font-style: italic; font-weight: 400; letter-spacing: 0.5px;">unwearied creation</span>
             </h1>
 
             <div class="hero-quote-card">
@@ -176,23 +174,8 @@
                 🎭 <span>Services:</span> <strong>Face & Body Painting</strong>
               </div>
               <div class="hero-tag-pill">
-                ✍️ <span>Writings:</span> <strong>Poetic Chronicles & Zines</strong>
-              </div>
-              <div class="hero-tag-pill">
                 📍 <span>Location:</span> <strong>New Delhi, India</strong>
               </div>
-            </div>
-
-            <div class="hero-actions-row">
-              <a href="#gallery" class="btn btn-primary">
-                🖼️ Explore Art Gallery
-              </a>
-              <a href="#facepainting" class="btn btn-secondary">
-                🎨 Book Face Painting
-              </a>
-              <a href="#store" class="btn btn-earth">
-                🛍️ Shop Artifacts
-              </a>
             </div>
           </div>
         </div>
@@ -234,95 +217,97 @@
       </div>
     </section>
 
-    <!-- FACE PAINTING & CREATIVE SERVICES SECTION -->
+    <!-- =========================================
+     FACE ART GALLERY
+     ========================================= -->
+    <section class="section" id="faceart-gallery">
+      <div class="container">
+
+        <div class="section-header">
+          <span class="section-tag">Face Art Portfolio</span>
+
+          <h2 class="section-title">
+            Face Art Gallery
+          </h2>
+
+          <p class="section-subtitle">
+            Explore our face painting designs, festival looks,
+            editorial art, and creative face art.
+          </p>
+        </div>
+
+        <div id="faceArtGrid" style="
+        display: grid;
+        grid-template-columns:
+          repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+      ">
+
+          <div id="faceArtLoading" style="
+          grid-column: 1 / -1;
+          text-align: center;
+          padding: 3rem;
+          color: var(--text-muted);
+        ">
+            🎨 Loading Face Art...
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FACE PAINTING & CREATIVE SERVICES SECTION (BOOKINGS BELOW FACE ART GALLERY) -->
     <section class="section" id="facepainting" style="background: var(--bg-surface-elevated);">
       <div class="container">
         <div class="section-header">
           <span class="section-tag">Creative Services</span>
           <h2 class="section-title">Face Painting & Body Art Bookings</h2>
-          <p class="section-subtitle">Wearable art for cllege fests, editorial photoshoots, and
-            celebrations.</p>
+          <p class="section-subtitle">Wearable art for college fests, editorial photoshoots, and celebrations.</p>
         </div>
 
         <div class="booking-wrapper">
 
-          <!-- LEFT: Services & Rates -->
-          <div class="booking-sidebar">
-
+          <!-- LEFT: Creative Face Art Photo Spotlight Section -->
+          <div class="booking-sidebar booking-photo-sidebar" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2.25rem;">
             <div>
-              <h3 style="
-        font-family: var(--font-serif);
-        font-size: 1.6rem;
-        margin-bottom: 1rem;
-        color: var(--text-main);
-      ">
-                Artistic Services
-              </h3>
+              <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-md); border: 2px solid var(--border-pink); background: white; margin-bottom: 1.5rem;">
+                <div class="washi-tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(-1deg); z-index: 2;"></div>
+                <div style="aspect-ratio: 4/5; overflow: hidden; position: relative;">
+                  <img id="bookingFeatureImage" src="https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80"
+                    alt="Face Art Experience" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease;"
+                    onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'" />
+                  <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, transparent 0%, rgba(30, 20, 24, 0.85) 100%); padding: 1.25rem 1rem 0.85rem; color: white;">
+                    <span style="display: inline-block; background: rgba(224, 76, 120, 0.9); font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.35rem;">Live Showcase</span>
+                    <h4 style="font-family: var(--font-serif); font-size: 1.15rem; margin: 0; color: #FFF;">Expressive Pigments & Face Art</h4>
+                  </div>
+                </div>
+              </div>
 
-              <p style="
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        margin-bottom: 1.5rem;
-      ">
-                Using skin-safe, cosmetic-grade non-toxic pigments,
-                holographic glitters, and floral accents.
+              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 1.25rem;">
+                Bespoke wearable art created with cosmetic-grade, skin-safe non-toxic pigments, holographic glitters, and celestial motifs.
               </p>
 
-              <!-- College Fest -->
-              <div class="booking-service-card">
-
-                <div class="booking-service-title">
-                  🏛️ College Fests & Cultural Arena
-                </div>
-
-                <div class="booking-service-price">
-                  From <span id="facePriceFest">₹0</span>
-                  / slot • Fast-track designs for crowds
-                </div>
-
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">🎭 Festival Looks</span>
+                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">📸 Editorial Shoots</span>
+                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">🌸 Skin-Safe Pigments</span>
               </div>
-
-              <!-- Editorial -->
-              <div class="booking-service-card">
-
-                <div class="booking-service-title">
-                  📸 Editorial & Fashion Lookbooks
-                </div>
-
-                <div class="booking-service-price">
-                  From <span id="facePriceEditorial">₹0</span>
-                  / shoot • Intricate editorial concepts
-                </div>
-
-              </div>
-
-              <!-- Private -->
-              <div class="booking-service-card">
-
-                <div class="booking-service-title">
-                  🌸 Private Gatherings & Festivals
-                </div>
-
-                <div class="booking-service-price">
-                  From <span id="facePricePrivate">₹0</span>
-                  / event • Custom theme face glam
-                </div>
-
-              </div>
-
-              <div style="
-        margin-top: 1.5rem;
-        font-size: 0.8rem;
-        color: var(--color-earth-700);
-      ">
-                📍 Available across Delhi NCR & North/South Campus.
-              </div>
-
             </div>
 
-          </div>
-          <!-- END LEFT SIDEBAR -->
+            <!-- Preserved hidden price elements for calculation compatibility -->
+            <div style="display: none;" aria-hidden="true">
+              <span id="facePriceFest">₹0</span>
+              <span id="facePriceEditorial">₹0</span>
+              <span id="facePricePrivate">₹0</span>
+            </div>
 
+            <div style="margin-top: 1.5rem; font-size: 0.825rem; color: var(--color-earth-700); font-weight: 500;">
+              📍 Available across Delhi NCR & North/South Campus.
+            </div>
+          </div>
+          <!-- END LEFT PHOTO SPOTLIGHT -->
 
           <!-- RIGHT: BOOKING FORM -->
           <div class="booking-form-wrap">
@@ -487,62 +472,6 @@
           </div>
           <!-- END RIGHT BOOKING FORM -->
 
-        </div>
-    </section>
-
-    <!-- =========================================
-     FACE ART GALLERY
-     ========================================= -->
-    <section class="section" id="faceart-gallery">
-      <div class="container">
-
-        <div class="section-header">
-          <span class="section-tag">Face Art Portfolio</span>
-
-          <h2 class="section-title">
-            Face Art Gallery
-          </h2>
-
-          <p class="section-subtitle">
-            Explore our face painting designs, festival looks,
-            editorial art, and creative face art.
-          </p>
-        </div>
-
-        <div id="faceArtGrid" style="
-        display: grid;
-        grid-template-columns:
-          repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-top: 2rem;
-      ">
-
-          <div id="faceArtLoading" style="
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 3rem;
-          color: var(--text-muted);
-        ">
-            🎨 Loading Face Art...
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- POETRY & WRITINGS SECTION -->
-    <section class="section" id="poetry">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-tag">Writings & Musings</span>
-          <h2 class="section-title">Poetic Chronicles & Books</h2>
-          <p class="section-subtitle">Verses composed with paint-stained fingers between college classes and quiet
-            dusks.</p>
-        </div>
-
-        <div class="poetry-grid" id="poetryGrid">
-          <!-- Populated by poetry.js -->
         </div>
       </div>
     </section>
@@ -709,15 +638,15 @@
       <div
         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem; border-bottom: 1px solid var(--border-light); padding-bottom: 2rem; margin-bottom: 2rem;">
         <div>
-          <span class="brand-name dyn-name" style="font-size: 1.8rem;">AKANKSHA</span>
-          <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
-            Visual Artist, Face Painter & Writer
+          <span class="brand-name dyn-name" style="font-size: 1.8rem;">AKAMATOE</span>
+          <p class="dyn-tagline" style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">
+            unwearied creation
           </p>
         </div>
         <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
           <a href="#gallery" class="nav-link" style="font-size: 0.875rem;">Art Gallery</a>
+          <a href="#faceart-gallery" class="nav-link" style="font-size: 0.875rem;">Face Art Gallery</a>
           <a href="#facepainting" class="nav-link" style="font-size: 0.875rem;">Face Painting</a>
-          <a href="#poetry" class="nav-link" style="font-size: 0.875rem;">Poetry</a>
           <a href="#store" class="nav-link" style="font-size: 0.875rem;">Artifacts</a>
           <button
             style="background: none; border: none; font-size: 0.875rem; color: var(--color-pink-600); cursor: pointer; font-weight: 600;"
@@ -729,7 +658,7 @@
       <div
         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem; color: var(--text-light);">
         <div>
-          © 2026 Akanksha. Handcrafted with artistic love & blush elegance.
+          © 2026 AKAMATOE. unwearied creation.
         </div>
         <div>
           Email: <a href="mailto:akankshachandreshwar@gmail.com" class="dyn-email">a*********@gmail.com</a> •
@@ -892,20 +821,12 @@
     </div>
   </div>
 
-  <!-- 4. POEM READER MODAL -->
-  <div class="modal-container" id="poemModal" style="width: 640px;">
-    <button class="modal-close-btn" data-target-modal="poemModal">✕</button>
-    <div id="poemModalContent">
-      <!-- Populated by poetry.js -->
-    </div>
-  </div>
-
-  <!-- 5. WRITE A REVIEW MODAL -->
+  <!-- 4. WRITE A REVIEW MODAL -->
   <div class="modal-container" id="writeReviewModal" style="width: 540px;">
     <button class="modal-close-btn" data-target-modal="writeReviewModal">✕</button>
     <h2 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.5rem;">Leave a Rating & Review</h2>
     <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">Share your experience with
-      Akanksha's paintings, face art, or poetry.</p>
+      AKAMATOE's paintings, face art, or handcrafted artifacts.</p>
 
     <form id="reviewForm">
       <div class="form-group" style="margin-bottom: 1rem;">
@@ -1015,7 +936,6 @@
   <script src="js/faceart.js"></script>
   <script src="js/store.js"></script>
   <script src="js/booking.js"></script>
-  <script src="js/poetry.js"></script>
   <script src="js/reviews.js"></script>
   <script src="js/contact.js"></script>
   <script src="js/admin.js"></script>
@@ -1037,7 +957,7 @@
         const settings = result.data || {};
 
         const upiId = settings.upiId || 'akanksha.lko30@oksbi';
-        const upiName = settings.name || 'Akanksha';
+        const upiName = settings.name || 'AKAMATOE';
 
         const upiUrl =
           `upi://pay?pa=${encodeURIComponent(upiId)}` +

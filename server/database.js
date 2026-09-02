@@ -61,14 +61,17 @@ async function initDatabase() {
     } else {
       // Fallback settings if not yet created
       databaseCache.settings = {
-        name: "Akanksha",
-        institution: "Miranda House, University of Delhi",
+        name: "AKAMATOE",
+        tagline: "unwearied creation",
+        title: "unwearied creation",
+        institution: "Hindu College, University of Delhi",
         bioQuote: "A young artist driven by the desire to create a colourful canvas of life.",
         email: "akankshachandreshwar@gmail.com",
         phone: "9517155681",
         instagramPrimary: "@_akanxha",
         instagramSecondary: "@psychotichic",
-        announcement: "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping Across India ✨"
+        artistImage: "",
+        announcement: "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping on Art Prints Across India ✨"
       };
       await db.collection("settings").doc("main").set(databaseCache.settings);
     }

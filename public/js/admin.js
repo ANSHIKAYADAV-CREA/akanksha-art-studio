@@ -585,7 +585,7 @@ const Admin = {
             </label>
             <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
               <div style="width: 100px; height: 120px; border-radius: 6px; overflow: hidden; border: 2px solid var(--color-pink-300); box-shadow: var(--shadow-sm); background: var(--color-pink-50);">
-                <img id="adminPhotoPreview" src="${s.artistImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80'}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;" />
+                <img id="adminPhotoPreview" src="${s.artistImage || 'images/artist-placeholder.svg'}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;" />
               </div>
               <div style="flex: 1; min-width: 240px;">
                 <label style="display: inline-block; background: var(--color-pink-500); color: white; padding: 0.5rem 1.25rem; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 0.5rem;">
@@ -611,8 +611,8 @@ const Admin = {
           </div>
 
           <div class="form-group" style="margin-bottom: 1rem;">
-            <label class="form-label">Artist Name</label>
-            <input type="text" name="name" class="form-input" value="${s.name || 'Akanksha'}" required />
+            <label class="form-label">Artist Name / Brand</label>
+            <input type="text" name="name" class="form-input" value="${s.name || 'AKAMATOE'}" required />
           </div>
 
           <div class="form-group" style="margin-bottom: 1rem;">
@@ -787,7 +787,17 @@ const Admin = {
         preview.src = cloudinaryUrl;
       }
 
-      App.showToast('✅ Photo uploaded to Cloudinary successfully!');
+      // Auto-persist immediately to settings so hero photo persists across page refresh
+      try {
+        const updateRes = await API.updateSettings({ artistImage: cloudinaryUrl });
+        if (updateRes.success && updateRes.data) {
+          App.refreshSettings(updateRes.data);
+        }
+      } catch (saveErr) {
+        console.warn('Auto-persist hero photo error:', saveErr);
+      }
+
+      App.showToast('✅ Photo uploaded and saved as Hero Portrait!');
 
       console.log('Cloudinary URL:', cloudinaryUrl);
       console.log('Cloudinary Public ID:', data.publicId);

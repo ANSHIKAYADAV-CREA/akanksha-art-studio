@@ -176,6 +176,12 @@ const FaceArt = {
         card.addEventListener('mouseleave', () => overlay.style.opacity = '0');
       }
     });
+
+    // Update booking section feature photo with the latest published Face Art
+    const bookingFeatureImg = document.getElementById('bookingFeatureImage');
+    if (bookingFeatureImg && this.faceArts.length > 0 && this.faceArts[0].image) {
+      bookingFeatureImg.src = this.faceArts[0].image;
+    }
   },
 
   openLightbox(index) {

@@ -20,7 +20,9 @@ const App = {
     }
     await Store.init();
     Booking.init();
-    await Poetry.init();
+    if (typeof Poetry !== 'undefined' && Poetry.init && document.getElementById('poetryGrid')) {
+      await Poetry.init();
+    }
     await Reviews.init();
     Contact.init();
     Admin.init();
@@ -37,8 +39,9 @@ const App = {
 
   refreshSettings(s) {
     // Dynamic text elements
-    document.querySelectorAll('.dyn-name').forEach(el => el.textContent = s.name || 'Akanksha');
-    document.querySelectorAll('.dyn-institution').forEach(el => el.textContent = s.institution || '');
+    document.querySelectorAll('.dyn-name').forEach(el => el.textContent = s.name || 'AKAMATOE');
+    document.querySelectorAll('.dyn-tagline').forEach(el => el.textContent = s.tagline || s.title || 'unwearied creation');
+    document.querySelectorAll('.dyn-institution').forEach(el => el.textContent = s.institution || 'Hindu College, University of Delhi');
     document.querySelectorAll('.dyn-email').forEach(el => {
       el.textContent = s.email || 'akankshachandreshwar@gmail.com';
       if (el.tagName === 'A') el.href = `mailto:${s.email || 'akankshachandreshwar@gmail.com'}`;
@@ -48,15 +51,14 @@ const App = {
       if (el.tagName === 'A') el.href = `tel:${s.phone || '9517155681'}`;
     });
     document.querySelectorAll('.dyn-whatsapp').forEach(el => {
-      if (el.tagName === 'A') el.href = `https://wa.me/91${s.phone || '9517155681'}?text=Hi%20Akanksha!%20I%20saw%20your%20art%20portfolio%20and%20would%20love%20to%20connect%20✨`;
+      if (el.tagName === 'A') el.href = `https://wa.me/91${s.phone || '9517155681'}?text=Hi!%20I%20saw%20your%20art%20portfolio%20and%20would%20love%20to%20connect%20✨`;
     });
 
-    // Dynamic Artist Image
-    if (s.artistImage) {
-      document.querySelectorAll('.dyn-artist-img').forEach(el => {
-        el.src = s.artistImage;
-      });
-    }
+    // Dynamic Artist Image: uses admin photo if uploaded, otherwise placeholder
+    const placeholderHero = 'images/artist-placeholder.svg';
+    document.querySelectorAll('.dyn-artist-img').forEach(el => {
+      el.src = (s.artistImage && s.artistImage.trim() !== '') ? s.artistImage : placeholderHero;
+    });
 
     const bioQuoteEl = document.getElementById('heroBioQuote');
     if (bioQuoteEl && s.bioQuote) {
