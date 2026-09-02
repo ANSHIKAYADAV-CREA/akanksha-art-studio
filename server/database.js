@@ -70,7 +70,7 @@ async function initDatabase() {
         phone: "9517155681",
         instagramPrimary: "@_akanxha",
         instagramSecondary: "@psychotichic",
-        artistImage: "",
+        artistImage: "https://res.cloudinary.com/wempi94r/image/upload/v1788366558/akanksha-art-studio/spmgiyneusf3wopgn0in.jpg",
         announcement: "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping on Art Prints Across India ✨"
       };
       await db.collection("settings").doc("main").set(databaseCache.settings);

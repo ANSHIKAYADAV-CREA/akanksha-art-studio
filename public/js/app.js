@@ -13,6 +13,14 @@ const App = {
     // Fetch and apply live settings from API
     await this.loadSettings();
 
+    // Immediate zero-flicker hero photo from local storage
+    try {
+      const cachedHero = localStorage.getItem('cached_hero_photo');
+      if (cachedHero) {
+        document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = cachedHero);
+      }
+    } catch (e) {}
+
     // Initialize sub-modules
     await Gallery.init();
     if (typeof FaceArt !== 'undefined' && FaceArt.init) {
@@ -58,9 +66,12 @@ const App = {
 
     // Dynamic Artist Image: uses admin photo if uploaded, otherwise placeholder
     const placeholderHero = 'images/artist-placeholder.svg';
-    document.querySelectorAll('.dyn-artist-img').forEach(el => {
-      el.src = (s.artistImage && s.artistImage.trim() !== '') ? s.artistImage : placeholderHero;
-    });
+    if (s.artistImage && s.artistImage.trim() !== '') {
+      try { localStorage.setItem('cached_hero_photo', s.artistImage); } catch (e) {}
+      document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = s.artistImage);
+    } else {
+      document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = placeholderHero);
+    }
 
     // Dynamic Face Painting Booking Spotlight Photo
     const bookingFeatureImg = document.getElementById('bookingFeatureImage');
