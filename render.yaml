@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: akanksha-art-studio
+    name: art-akamatos
     env: node
     plan: free
     buildCommand: npm install
