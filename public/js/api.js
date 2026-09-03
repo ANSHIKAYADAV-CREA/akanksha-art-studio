@@ -43,6 +43,21 @@ const API = {
     }
   },
 
+  // Image Upload (Cloudinary)
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await fetch(`${API_BASE}/api/upload-image`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.message || `HTTP Error ${response.status}`);
+    }
+    return await response.json();
+  },
+
   // Site Settings
   getSettings: () => API.request('/api/settings'),
   updateSettings: (data) => API.request('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),

@@ -518,6 +518,9 @@ const Admin = {
       // Save to settings
       const saveRes = await API.updateSettings({ bookingFeatureImage: photoUrl });
       if (!saveRes.success) throw new Error(saveRes.message || 'Could not update settings');
+      if (saveRes.data && window.App && typeof App.refreshSettings === 'function') {
+        App.refreshSettings(saveRes.data);
+      }
 
       // Update public website DOM immediately
       const publicImg = document.getElementById('bookingFeatureImage');
@@ -552,6 +555,9 @@ const Admin = {
     try {
       const saveRes = await API.updateSettings({ bookingFeatureImage: photoUrl });
       if (!saveRes.success) throw new Error(saveRes.message || 'Could not update settings');
+      if (saveRes.data && window.App && typeof App.refreshSettings === 'function') {
+        App.refreshSettings(saveRes.data);
+      }
 
       const previewEl = document.getElementById('adminBookingPhotoPreview');
       if (previewEl) previewEl.src = photoUrl;
@@ -568,7 +574,10 @@ const Admin = {
   async resetBookingPhoto() {
     const defaultUrl = 'https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80';
     try {
-      await API.updateSettings({ bookingFeatureImage: defaultUrl });
+      const saveRes = await API.updateSettings({ bookingFeatureImage: defaultUrl });
+      if (saveRes.data && window.App && typeof App.refreshSettings === 'function') {
+        App.refreshSettings(saveRes.data);
+      }
       const previewEl = document.getElementById('adminBookingPhotoPreview');
       if (previewEl) previewEl.src = defaultUrl;
       const publicImg = document.getElementById('bookingFeatureImage');
