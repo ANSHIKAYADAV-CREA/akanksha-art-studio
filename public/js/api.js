@@ -53,7 +53,7 @@ const API = {
     });
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.message || `HTTP Error ${response.status}`);
+      throw new Error(errData.message || errData.error || `HTTP Error ${response.status}`);
     }
     return await response.json();
   },

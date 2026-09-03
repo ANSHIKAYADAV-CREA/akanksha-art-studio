@@ -80,42 +80,20 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       });
     }
 
-    console.log('📸 Upload request received');
-    console.log('📁 File:', req.file.originalname);
-    console.log('📦 Size:', req.file.size);
-    console.log('🖼️ Type:', req.file.mimetype);
-
-    console.log('☁️ Cloudinary config:', {
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key_found: !!process.env.CLOUDINARY_API_KEY,
-      api_secret_found: !!process.env.CLOUDINARY_API_SECRET
+    console.log('📸 Upload request received:', {
+      file: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
     });
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'akanksha-art-studio',
-          resource_type: 'image'
-        },
-        (error, result) => {
-          if (error) {
-            console.error('❌ CLOUDINARY RAW ERROR:', error);
-            console.error('❌ Message:', error.message);
-            console.error('❌ HTTP Code:', error.http_code);
-            console.error('❌ Error:', error.error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      );
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
-      stream.end(req.file.buffer);
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: 'akanksha-art-studio',
+      resource_type: 'auto'
     });
 
-    console.log('✅ CLOUDINARY UPLOAD SUCCESS');
-    console.log('🔗 URL:', result.secure_url);
-    console.log('🆔 Public ID:', result.public_id);
+    console.log('✅ CLOUDINARY UPLOAD SUCCESS:', result.secure_url);
 
     res.status(200).json({
       success: true,
@@ -125,19 +103,12 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('======================================');
-    console.error('❌ CLOUDINARY UPLOAD FAILED');
-    console.error('Message:', error.message);
-    console.error('HTTP Code:', error.http_code);
-    console.error('Error:', error.error);
-    console.error('Full Error:', error);
-    console.error('======================================');
+    console.error('❌ CLOUDINARY UPLOAD FAILED:', error);
 
     res.status(500).json({
       success: false,
-      message: 'Image upload failed',
-      error: error.message,
-      http_code: error.http_code || 500
+      message: 'Image upload failed: ' + (error.message || 'Unknown error'),
+      error: error.message || String(error)
     });
   }
 });
