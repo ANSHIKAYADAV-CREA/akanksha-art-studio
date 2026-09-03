@@ -17,7 +17,21 @@ if (fs.existsSync(localKeyPath)) {
 // RENDER: use FIREBASE_SERVICE_ACCOUNT
 else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     console.log("☁️ Using FIREBASE_SERVICE_ACCOUNT");
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    try {
+        let raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+        // Handle potential outer quotes added by env wrappers
+        if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+            raw = raw.slice(1, -1);
+        }
+        // Handle escaped newlines
+        if (!raw.startsWith('{') && raw.includes('{')) {
+            raw = raw.substring(raw.indexOf('{'));
+        }
+        serviceAccount = JSON.parse(raw);
+    } catch (e) {
+        console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:", e.message);
+        throw new Error("Invalid FIREBASE_SERVICE_ACCOUNT JSON: " + e.message);
+    }
 }
 
 else {
