@@ -109,6 +109,7 @@ const API = {
   getOrders: () => API.request('/api/orders'),
   createOrder: (data) => API.request('/api/orders', { method: 'POST', body: JSON.stringify(data) }),
   updateOrder: (id, data) => API.request(`/api/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteOrder: (id) => API.request(`/api/orders/${id}`, { method: 'DELETE' }),
 
   // Razorpay Gateway
   createRazorpayOrder: (data) => API.request('/api/razorpay/create-order', { method: 'POST', body: JSON.stringify(data) }),

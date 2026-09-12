@@ -428,242 +428,170 @@ app.get('/api/products', (req, res) => {
   res.json({ success: true, data: db.products || [] });
 });
 
-app.post('/api/products', (req, res) => {
-  const db = readDB();
-  const newProduct = {
-    id: generateId('prod'),
-    title: req.body.title || 'New Aesthetic Artifact',
-    category: req.body.category || 'Wearable Art',
-    price: Number(req.body.price) || 0,
-    originalPrice: Number(req.body.originalPrice) || Number(req.body.price) || 0,
-    stock: Number(req.body.stock) || 10,
-    image: req.body.image || 'https://images.unsplash.com/photo-1597633425046-08f5110420b5?auto=format&fit=crop&w=800&q=80',
-    publicId: req.body.publicId || '',
-    description: req.body.description || '',
-    tag: req.body.tag || 'New',
-    rating: Number(req.body.rating) || 5.0
-  };
-  db.products.unshift(newProduct);
-  writeDB(db);
-  res.status(201).json({ success: true, data: newProduct, message: "Product created successfully" });
+app.post('/api/products', async (req, res) => {
+  try {
+    const { title, category, price, originalPrice, stock, image, publicId, description, tag, rating } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ success: false, message: 'Product image is required.' });
+    }
+
+    const newProduct = {
+      id: generateId('prod'),
+      title: title ? String(title).trim() : 'New Aesthetic Artifact',
+      category: category || 'Wearable Art',
+      price: Number(price) || 0,
+      originalPrice: Number(originalPrice) || Number(price) || 0,
+      stock: Number(stock) || 10,
+      image: image,
+      publicId: publicId || '',
+      description: description || '',
+      tag: tag || 'New',
+      rating: Number(rating) || 5.0,
+      createdAt: new Date().toISOString()
+    };
+
+    await saveItem('products', newProduct);
+    console.log('✅ Product saved to Firebase Firestore & cache:', newProduct.id, newProduct.title);
+    res.status(201).json({ success: true, data: newProduct, message: "Product created successfully" });
+  } catch (err) {
+    console.error('❌ Product creation error:', err);
+    res.status(500).json({ success: false, message: 'Failed to create product', error: err.message });
+  }
 });
 
-app.put('/api/products/:id', (req, res) => {
-  const db = readDB();
-  const index = db.products.findIndex(p => p.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Product not found" });
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const existing = (db.products || []).find(p => String(p.id) === String(req.params.id));
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+    const updated = {
+      ...existing,
+      ...req.body,
+      price: req.body.price !== undefined ? Number(req.body.price) : existing.price,
+      stock: req.body.stock !== undefined ? Number(req.body.stock) : existing.stock
+    };
+    await saveItem('products', updated);
+    res.json({ success: true, data: updated, message: "Product updated successfully" });
+  } catch (err) {
+    console.error('❌ Product update error:', err);
+    res.status(500).json({ success: false, message: 'Failed to update product', error: err.message });
   }
-  db.products[index] = {
-    ...db.products[index],
-    ...req.body,
-    price: req.body.price !== undefined ? Number(req.body.price) : db.products[index].price,
-    stock: req.body.stock !== undefined ? Number(req.body.stock) : db.products[index].stock
-  };
-  writeDB(db);
-  res.json({ success: true, data: db.products[index], message: "Product updated successfully" });
 });
+
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const db = readDB();
+    const product = (db.products || []).find(p => String(p.id) === String(req.params.id));
 
-    const index = db.products.findIndex(
-      product => product.id === req.params.id
-    );
-
-    if (index === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    const product = db.products[index];
-
-    // =====================================================
-    // 1. GET CLOUDINARY PUBLIC ID
-    // =====================================================
-
-    let publicId = product.publicId || '';
-
-    // For older products where publicId wasn't saved,
-    // extract it from the Cloudinary image URL.
-    if (!publicId && product.image) {
+    // Try deleting Cloudinary image if it belongs to Cloudinary
+    let publicId = (product && product.publicId) || '';
+    if (!publicId && product && product.image && product.image.includes('res.cloudinary.com')) {
       try {
-        const imageUrl = product.image;
-
-        if (imageUrl.includes('res.cloudinary.com')) {
-          const uploadMarker = '/upload/';
-          const uploadIndex = imageUrl.indexOf(uploadMarker);
-
-          if (uploadIndex !== -1) {
-            let cloudinaryPath = imageUrl.substring(
-              uploadIndex + uploadMarker.length
-            );
-
-            // Remove version, e.g. v1234567890/
-            cloudinaryPath = cloudinaryPath.replace(
-              /^v\d+\//,
-              ''
-            );
-
-            // Remove file extension
-            cloudinaryPath = cloudinaryPath.replace(
-              /\.[^/.]+$/,
-              ''
-            );
-
-            publicId = cloudinaryPath;
-          }
+        const uploadMarker = '/upload/';
+        const uploadIndex = product.image.indexOf(uploadMarker);
+        if (uploadIndex !== -1) {
+          let cloudinaryPath = product.image.substring(uploadIndex + uploadMarker.length);
+          cloudinaryPath = cloudinaryPath.replace(/^v\d+\//, '');
+          cloudinaryPath = cloudinaryPath.replace(/\.[^/.]+$/, '');
+          publicId = cloudinaryPath;
         }
       } catch (extractError) {
-        console.error(
-          '⚠️ Could not extract Product Cloudinary Public ID:',
-          extractError.message
-        );
+        console.warn('⚠️ Could not extract Cloudinary public ID:', extractError.message);
       }
     }
 
-    console.log(
-      '🆔 Product Public ID:',
-      publicId || 'NONE'
-    );
-
-    // =====================================================
-    // 2. DELETE IMAGE FROM CLOUDINARY
-    // =====================================================
-
-    if (publicId) {
+    if (publicId && !publicId.includes('unsplash')) {
       try {
-        console.log(
-          '☁️ Deleting product image from Cloudinary:',
-          publicId
-        );
-
-        const cloudinaryResult =
-          await cloudinary.uploader.destroy(
-            publicId,
-            {
-              resource_type: 'image'
-            }
-          );
-
-        console.log(
-          '☁️ Cloudinary delete result:',
-          cloudinaryResult
-        );
-
-      } catch (cloudinaryError) {
-
-        console.error(
-          '❌ Product Cloudinary delete failed:',
-          cloudinaryError.message
-        );
-
-        return res.status(500).json({
-          success: false,
-          message:
-            'Product was not deleted because its Cloudinary image could not be deleted.',
-          error: cloudinaryError.message
-        });
+        console.log('☁️ Deleting product image from Cloudinary:', publicId);
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+      } catch (cErr) {
+        console.warn('⚠️ Cloudinary image delete notice (continuing database delete):', cErr.message);
       }
-
-    } else {
-      console.log(
-        'ℹ️ No Cloudinary image found for this product.'
-      );
     }
 
-    // =====================================================
-    // 3. DELETE PRODUCT FROM FIRESTORE / DATABASE
-    // =====================================================
-
-    db.products.splice(index, 1);
-
-    writeDB(db);
-
-    console.log(
-      '🗑️ Product permanently deleted:',
-      product.id
-    );
+    // Unconditionally delete from Firebase Firestore & local database
+    await deleteItem('products', req.params.id);
+    console.log('🗑️ Product permanently deleted from Firebase & local cache:', req.params.id);
 
     res.json({
       success: true,
-      data: product,
-      message:
-        'Product and associated Cloudinary image deleted successfully'
+      message: 'Product deleted successfully from Firestore and Cloudinary'
     });
-
   } catch (error) {
-
-    console.error(
-      '❌ Product delete error:',
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete product',
-      error: error.message
-    });
+    console.error('❌ Product delete error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete product', error: error.message });
   }
 });
 
 
 // -------------------------------------------------------------
-// FACE PAINTING BOOKINGS API
+// FACE PAINTING BOOKINGS API (NO PRICING REQUIRED)
 // -------------------------------------------------------------
 app.get('/api/bookings', (req, res) => {
   const db = readDB();
   res.json({ success: true, data: db.bookings || [] });
 });
 
-app.post('/api/bookings', (req, res) => {
-  const db = readDB();
-  const shortNum = Math.floor(1000 + Math.random() * 9000);
-  const newBooking = {
-    id: `BK-${shortNum}`,
-    clientName: req.body.clientName || 'Anonymous',
-    clientEmail: req.body.clientEmail || '',
-    clientPhone: req.body.clientPhone || '',
-    eventType: req.body.eventType || 'College Fest / Cultural Event',
-    eventDate: req.body.eventDate || new Date().toISOString().split('T')[0],
-    timeSlot: req.body.timeSlot || 'Afternoon (2:00 PM - 5:00 PM)',
-    guestCount: Number(req.body.guestCount) || 10,
-    location: req.body.location || 'Delhi University / Delhi NCR',
-    notes: req.body.notes || '',
-    status: 'Pending',
-    estimatedAmount: Number(req.body.estimatedAmount) || 2500,
-    createdAt: new Date().toISOString()
-  };
-  db.bookings.unshift(newBooking);
-  writeDB(db);
-  res.status(201).json({ success: true, data: newBooking, message: "Booking requested successfully! Akanksha will review and confirm shortly." });
+app.post('/api/bookings', async (req, res) => {
+  try {
+    const shortNum = Math.floor(1000 + Math.random() * 9000);
+    const newBooking = {
+      id: `BK-${shortNum}`,
+      clientName: req.body.clientName || 'Anonymous',
+      clientEmail: req.body.clientEmail || '',
+      clientPhone: req.body.clientPhone || '',
+      eventType: req.body.eventType || 'College Fest / Cultural Event',
+      eventDate: req.body.eventDate || new Date().toISOString().split('T')[0],
+      timeSlot: req.body.timeSlot || 'Afternoon (2:00 PM - 5:00 PM)',
+      guestCount: Number(req.body.guestCount) || 20,
+      location: req.body.location || 'Delhi University / Delhi NCR',
+      notes: req.body.notes || '',
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    await saveItem('bookings', newBooking);
+    res.status(201).json({
+      success: true,
+      data: newBooking,
+      message: "Booking request submitted successfully! Akanksha will review and confirm shortly. 🌸"
+    });
+  } catch (err) {
+    console.error("Booking creation error:", err);
+    res.status(500).json({ success: false, message: "Failed to submit booking", error: err.message });
+  }
 });
 
-app.put('/api/bookings/:id', (req, res) => {
-  const db = readDB();
-  const index = db.bookings.findIndex(b => b.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Booking not found" });
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const existing = (db.bookings || []).find(b => b.id === req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+    const updated = {
+      ...existing,
+      ...req.body
+    };
+    await saveItem('bookings', updated);
+    res.json({ success: true, data: updated, message: "Booking status updated successfully" });
+  } catch (err) {
+    console.error("Booking update error:", err);
+    res.status(500).json({ success: false, message: "Failed to update booking", error: err.message });
   }
-  db.bookings[index] = {
-    ...db.bookings[index],
-    ...req.body
-  };
-  writeDB(db);
-  res.json({ success: true, data: db.bookings[index], message: "Booking status updated" });
 });
 
-app.delete('/api/bookings/:id', (req, res) => {
-  const db = readDB();
-  const index = db.bookings.findIndex(b => b.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Booking not found" });
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    await deleteItem('bookings', id);
+    res.json({ success: true, message: "Booking deleted successfully" });
+  } catch (err) {
+    console.error("Booking delete error:", err);
+    res.status(500).json({ success: false, message: "Failed to delete booking", error: err.message });
   }
-  const deleted = db.bookings.splice(index, 1);
-  writeDB(db);
-  res.json({ success: true, data: deleted[0], message: "Booking deleted" });
 });
 app.get('/api/face-painting-pricing', (req, res) => {
   const db = readDB();
@@ -811,38 +739,80 @@ app.get('/api/orders', (req, res) => {
   res.json({ success: true, data: db.orders || [] });
 });
 
-app.post('/api/orders', (req, res) => {
-  const db = readDB();
-  const orderNum = Math.floor(1000 + Math.random() * 9000);
-  const newOrder = {
-    id: `ORD-${orderNum}`,
-    customerName: req.body.customerName || 'Anonymous Collector',
-    email: req.body.email || '',
-    phone: req.body.phone || '',
-    address: req.body.address || '',
-    items: req.body.items || [],
-    totalAmount: Number(req.body.totalAmount) || 0,
-    paymentMethod: req.body.paymentMethod || 'UPI (Google Pay / PhonePe)',
-    status: 'Processing',
-    createdAt: new Date().toISOString()
-  };
-  db.orders.unshift(newOrder);
-  writeDB(db);
-  res.status(201).json({ success: true, data: newOrder, message: "Order placed successfully! We are preparing your artistic package with love. ✨" });
+app.post('/api/orders', async (req, res) => {
+  try {
+    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const paymentMethod = req.body.paymentMethod || 'Cash on Delivery (COD)';
+    const isCOD = paymentMethod.toLowerCase().includes('cash');
+
+    // Determine payment status: Paid, To Pay, or Not Yet
+    let paymentStatus = req.body.paymentStatus;
+    if (!paymentStatus) {
+      if (isCOD) {
+        paymentStatus = 'To Pay';
+      } else if (req.body.paymentVerified || paymentMethod.includes('Razorpay')) {
+        paymentStatus = 'Paid';
+      } else {
+        paymentStatus = 'Not Yet';
+      }
+    }
+
+    const newOrder = {
+      id: `ORD-${orderNum}`,
+      customerName: req.body.customerName || 'Anonymous Collector',
+      email: req.body.email || '',
+      phone: req.body.phone || '',
+      address: req.body.address || '',
+      items: Array.isArray(req.body.items) ? req.body.items : [],
+      totalAmount: Number(req.body.totalAmount) || 0,
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      status: req.body.status || 'Processing',
+      notes: req.body.notes || '',
+      paymentDetails: req.body.paymentDetails || {},
+      createdAt: new Date().toISOString()
+    };
+
+    await saveItem('orders', newOrder);
+    res.status(201).json({
+      success: true,
+      data: newOrder,
+      message: "Order placed successfully! We are preparing your artistic package with love. ✨"
+    });
+  } catch (error) {
+    console.error("Order placement error:", error);
+    res.status(500).json({ success: false, message: "Failed to place order", error: error.message });
+  }
 });
 
-app.put('/api/orders/:id', (req, res) => {
-  const db = readDB();
-  const index = db.orders.findIndex(o => o.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: "Order not found" });
+app.put('/api/orders/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const existing = (db.orders || []).find(o => o.id === req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    const updated = {
+      ...existing,
+      ...req.body
+    };
+    await saveItem('orders', updated);
+    res.json({ success: true, data: updated, message: "Order status updated" });
+  } catch (error) {
+    console.error("Order update error:", error);
+    res.status(500).json({ success: false, message: "Failed to update order", error: error.message });
   }
-  db.orders[index] = {
-    ...db.orders[index],
-    ...req.body
-  };
-  writeDB(db);
-  res.json({ success: true, data: db.orders[index], message: "Order status updated" });
+});
+
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    await deleteItem('orders', id);
+    res.json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    console.error("Order delete error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete order", error: error.message });
+  }
 });
 
 // -------------------------------------------------------------
@@ -851,13 +821,13 @@ app.put('/api/orders/:id', (req, res) => {
 app.post('/api/razorpay/create-order', async (req, res) => {
   const db = readDB();
   const { amount, currency = 'INR', receipt } = req.body;
-  const keyId = db.settings.razorpayKeyId;
-  const keySecret = db.settings.razorpayKeySecret;
+  const keyId = db.settings?.razorpayKeyId ? db.settings.razorpayKeyId.trim() : '';
+  const keySecret = db.settings?.razorpayKeySecret ? db.settings.razorpayKeySecret.trim() : '';
 
   // Amount in paise (1 INR = 100 paise)
   const amountInPaise = Math.round(Number(amount) * 100);
 
-  if (keyId && keySecret && keyId.startsWith('rzp_')) {
+  if (keyId && keySecret && (keyId.startsWith('rzp_test_') || keyId.startsWith('rzp_live_'))) {
     try {
       const Razorpay = require('razorpay');
       const rzp = new Razorpay({
@@ -882,20 +852,21 @@ app.post('/api/razorpay/create-order', async (req, res) => {
       });
     } catch (err) {
       console.error("Razorpay order creation error:", err);
-      // Fallback to seamless simulation if live call fails
+      return res.json({
+        success: false,
+        isLiveGateway: false,
+        message: "Razorpay order creation failed: " + (err.error?.description || err.message || "Invalid API keys"),
+        error: err.message
+      });
     }
   }
 
-  // Simulated / Test Gateway Mode
-  const simulatedOrderId = `order_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+  // If no valid live/test Razorpay keys are configured, fallback cleanly to direct studio payment mode
   res.json({
     success: true,
-    orderId: simulatedOrderId,
-    amount: amountInPaise,
-    currency: 'INR',
-    keyId: keyId || 'rzp_test_akanksha_studio',
     isLiveGateway: false,
-    message: "Using Studio Instant Gateway / Test Mode. Enter Razorpay keys in Admin Settings to activate live bank settlements."
+    keyId: '',
+    message: "No live Razorpay keys configured. Using Studio Direct UPI / Order placement mode."
   });
 });
 
@@ -951,7 +922,7 @@ app.post('/api/admin/login', async (req, res) => {
     const database = await readDB();
 
     const currentPin = String(
-      database.settings?.adminPin || ''
+      database.settings?.adminPin || '1234'
     ).trim();
 
     if (currentPin && pin === currentPin) {
@@ -1025,10 +996,15 @@ app.get('/api/admin/stats', (req, res) => {
   const totalFaceArts = (db.faceArts || []).length;
   const publishedFaceArts = (db.faceArts || []).filter(f => f.isPublished !== false).length;
   const totalProducts = (db.products || []).length;
+  const orders = db.orders || [];
+  const totalOrders = orders.length;
+  const paidOrders = orders.filter(o => o.paymentStatus === 'Paid').length;
+  const toPayOrders = orders.filter(o => o.paymentStatus === 'To Pay' || (!o.paymentStatus && o.paymentMethod && o.paymentMethod.toLowerCase().includes('cash'))).length;
+  const notYetOrders = orders.filter(o => o.paymentStatus === 'Not Yet' || (!o.paymentStatus && (!o.paymentMethod || !o.paymentMethod.toLowerCase().includes('cash')))).length;
+  const totalRevenue = orders.filter(o => o.paymentStatus === 'Paid').reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
+  const pendingRevenue = orders.filter(o => o.paymentStatus !== 'Paid').reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
   const totalBookings = (db.bookings || []).length;
-  const pendingBookings = (db.bookings || []).filter(b => b.status === 'Pending').length;
-  const totalOrders = (db.orders || []).length;
-  const totalRevenue = (db.orders || []).reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const pendingBookings = (db.bookings || []).filter(b => !b.status || b.status === 'Pending').length;
   const totalReviews = (db.reviews || []).length;
   const avgRating = totalReviews > 0 ? ((db.reviews || []).reduce((acc, r) => acc + (r.rating || 5), 0) / totalReviews).toFixed(1) : "5.0";
 
@@ -1043,7 +1019,11 @@ app.get('/api/admin/stats', (req, res) => {
       totalBookings,
       pendingBookings,
       totalOrders,
+      paidOrders,
+      toPayOrders,
+      notYetOrders,
       totalRevenue,
+      pendingRevenue,
       totalReviews,
       avgRating
     }

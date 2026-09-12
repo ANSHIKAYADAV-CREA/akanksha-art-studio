@@ -6,17 +6,19 @@
     "instagramSecondary": "@psychotichic",
     "bioQuote": "A young artist driven by the desire to create a colourful canvas of life. I welcome you to my little corner, where you can explore my work, discover the stories woven into every creation, and become a part of this ever-evolving journey of expression.",
     "bioSubtitle": "Exploring the delicate intersection of emotion, raw pigment, poetry, and transient human connection across Delhi & beyond.",
-    "announcement": "🌸 Welcoming Custom Commissions & Delhi NCR Face Painting Bookings for College Fests & Gatherings • Free Shipping on Art Prints Across India ✨",
+    "announcement": "🌸 Welcoming Custom Commissions & Studio Art Orders • Free Shipping Across India ✨",
     "adminPin": "alright@12",
     "upiId": "akanksha.lko30@oksbi",
-    "razorpayKeyId": "",
-    "razorpayKeySecret": "alright@12",
+    "razorpayKeyId": "TVDisIMsHzA1OV",
+    "razorpayKeySecret": "",
     "institution": "Hindu College, University of Delhi",
     "artistImage": "https://res.cloudinary.com/wempi94r/image/upload/v1788366558/akanksha-art-studio/spmgiyneusf3wopgn0in.jpg",
     "name": "ΑΚΑΜΑΤΟΣ",
     "tagline": "unwearied creation",
     "title": "unwearied creation",
-    "bookingFeatureImage": "https://res.cloudinary.com/wempi94r/image/upload/v1788440861/akanksha-art-studio/ioy7hzue6spyvxdb72su.jpg"
+    "bookingFeatureImage": "https://res.cloudinary.com/wempi94r/image/upload/v1788446134/akanksha-art-studio/e9mi7t9zajv9kc9dbapb.jpg",
+    "bookingFeatureTitle": "Ethereal Fest & Editorial Look",
+    "bookingFeatureSubtitle": "Hand-painted bespoke motifs created by Akanksha for university fests and cultural gatherings."
   },
   "artworks": [
     {
@@ -74,6 +76,20 @@
       "title": "Shiv-Shakti",
       "publicId": "akanksha-art-studio/lennng7bmafksdqin9yy",
       "dimensions": "24 x 36 inches"
+    },
+    {
+      "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+      "year": "2026",
+      "isSold": false,
+      "price": 1,
+      "description": "Original studio creation inspired by delicate blush tones and Delhi sunlight.",
+      "id": "art-mtoiq5xr-bzs5",
+      "medium": "Acrylic & Gold Leaf on Canvas (24x36)",
+      "category": "Canvas Paintings",
+      "isFeatured": false,
+      "title": "Whispers of North Campus II",
+      "publicId": "akanksha-art-studio/lrkxgam8muhstyyufcte",
+      "dimensions": "24 x 36 inches"
     }
   ],
   "faceArts": [
@@ -129,64 +145,17 @@
   ],
   "products": [
     {
-      "id": "prod-2",
-      "title": "Custom Painted Vintage Denim Jacket",
-      "category": "Fashion Artifacts",
-      "price": 3499,
-      "originalPrice": 4200,
-      "stock": 3,
-      "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80",
-      "description": "One-of-a-kind upcycled denim jacket featuring custom botanical and celestial artwork on back panel. Made to order.",
-      "tag": "Limited Edition",
-      "rating": 5
-    },
-    {
-      "id": "prod-3",
-      "title": "Chronicles of Blush & Ink - Poetry Zine (Vol. I)",
-      "category": "Poetry Books",
-      "price": 499,
-      "originalPrice": 650,
-      "stock": 25,
-      "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
-      "description": "An intimate 48-page softcover collection of poems, handwritten notes, and original ink illustrations.",
-      "tag": "Artist Book",
-      "rating": 4.9
-    },
-    {
-      "id": "prod-4",
-      "title": "Botanical Gold Foil Bookmark Set (Pack of 4)",
-      "category": "Artifacts",
-      "price": 349,
-      "originalPrice": 450,
-      "stock": 40,
-      "image": "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80",
-      "description": "Heavyweight 350 GSM cotton paper bookmarks embellished with rose gold metallic foil and silk tassels.",
-      "tag": "Popular",
-      "rating": 4.8
-    },
-    {
-      "id": "prod-5",
-      "title": "Fine Art Giclée Print: 'Ephemeral Blush'",
-      "category": "Art Prints",
-      "price": 1199,
-      "originalPrice": 1499,
-      "stock": 15,
-      "image": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80",
-      "description": "Museum-grade pigment print on 310 GSM Hahnemühle textured cotton paper, hand-signed and numbered by Akanksha.",
-      "tag": "Collector Print",
-      "rating": 5
-    },
-    {
-      "id": "prod-6",
-      "title": "Artisan Ceramic Palette & Brush Rest Set",
-      "category": "Artifacts",
-      "price": 899,
-      "originalPrice": 1199,
-      "stock": 6,
-      "image": "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80",
-      "description": "Handcrafted ceramic mixing palette with soft pink glaze and a sculpted floral brush rest.",
-      "tag": "Handmade",
-      "rating": 4.9
+      "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788466491/akanksha-art-studio/uxug1yykgnajrfyczmyw.jpg",
+      "originalPrice": 1299,
+      "price": 1299,
+      "rating": 5,
+      "description": "Preserve a piece of your love forever with our handcrafted Epoxy Resin Dried Flower Heart Pendant. Delicately encasing real dried flowers in crystal-clear resin, this timeless heart-shaped pendant allows every beautiful detail to remain visible, as if frozen in time. Lightweight, odour-free, and designed for lasting durability, it won’t easily break—making it a precious keepsake you can carry close to your heart. Suspended from an elegant silver chain, the transparent pendant beautifully captures the flowers within, preserving their beauty and the memories they hold for years to come. A little piece of nature, a little piece of love—secured forever.",
+      "id": "prod-mtlyrtol-2tvi",
+      "tag": "New",
+      "category": "Wearable Art",
+      "stock": 10,
+      "title": "Timeless love ",
+      "publicId": "akanksha-art-studio/uxug1yykgnajrfyczmyw"
     }
   ],
   "bookings": [],
@@ -265,10 +234,32 @@
       "approved": true
     }
   ],
-  "orders": [],
+  "orders": [
+    {
+      "createdAt": "2026-09-04T07:19:19.997Z",
+      "totalAmount": 15000,
+      "address": "police line",
+      "phone": "9569907334",
+      "paymentMethod": "Cash on Delivery",
+      "id": "ORD-9657",
+      "items": [
+        {
+          "id": "art-mtlg8j3k-fqk2",
+          "title": "KRISHNA IN YOUTH AGE",
+          "price": 15000,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788435358/akanksha-art-studio/x8gujotjgwyntodriqj8.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "customerName": "Anshika yadav",
+      "email": "anshikabitee4372@gmail.com",
+      "status": "Processing"
+    }
+  ],
   "facePaintingPricing": {
-    "private": 200,
-    "fest": 550,
-    "editorial": 35698
+    "private": 2500,
+    "fest": 3500,
+    "editorial": 4000
   }
 }

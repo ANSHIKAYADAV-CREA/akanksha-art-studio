@@ -233,7 +233,7 @@ const Store = {
       return;
     }
     this.closeCart();
-    
+
     // Update Checkout summary
     const checkoutSummaryEl = document.getElementById('checkoutOrderSummary');
     if (checkoutSummaryEl) {
@@ -261,7 +261,10 @@ const Store = {
     e.preventDefault();
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
-    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Processing...';
+    }
 
     const customerName = form.elements['customerName'].value;
     const email = form.elements['email'].value;
@@ -269,6 +272,13 @@ const Store = {
     const address = form.elements['address'].value;
     const paymentMethod = form.elements['paymentMethod'].value;
     const total = this.getTotal();
+
+    const resetSubmitBtn = () => {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🌸 Complete Order & Pay';
+      }
+    };
 
     // Check if online Razorpay gateway is selected (not COD)
     const isOnlinePayment = !paymentMethod.includes('Cash on Delivery');
@@ -282,24 +292,24 @@ const Store = {
           receipt: `rcpt_${Date.now()}`
         });
 
-        if (rzpRes && rzpRes.success) {
+        // ONLY open Razorpay popup if keys are actually configured and live/test gateway order succeeded
+        if (rzpRes && rzpRes.success && rzpRes.isLiveGateway && rzpRes.keyId && rzpRes.orderId) {
           const self = this;
           const options = {
-            key: rzpRes.keyId || 'rzp_test_akanksha',
+            key: rzpRes.keyId,
             amount: rzpRes.amount,
             currency: rzpRes.currency || 'INR',
-            name: 'Akanksha Art Studio',
+            name: 'AKAMATOE Art Studio',
             description: `Original Art & Artifacts (${self.cart.length} items)`,
             image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-            order_id: rzpRes.isLiveGateway ? rzpRes.orderId : undefined,
+            order_id: rzpRes.orderId,
             prefill: {
               name: customerName,
               email: email,
               contact: phone
             },
             notes: {
-              address: address,
-              university: ''
+              address: address
             },
             theme: {
               color: '#E64972'
@@ -329,12 +339,13 @@ const Store = {
                 self.appliedDiscount = 0;
                 self.saveCart();
                 App.closeModal('checkoutModal');
+                resetSubmitBtn();
                 self.showOrderConfirmation(orderRes.data);
               }
             },
             modal: {
               ondismiss: function () {
-                if (submitBtn) submitBtn.disabled = false;
+                resetSubmitBtn();
                 App.showToast('Payment window closed. You can retry whenever you are ready.');
               }
             }
@@ -342,19 +353,19 @@ const Store = {
 
           const razorpayInstance = new Razorpay(options);
           razorpayInstance.on('payment.failed', function (resp) {
-            if (submitBtn) submitBtn.disabled = false;
-            App.showToast(`Payment failed: ${resp.error.description || 'Please try another method'}`);
+            resetSubmitBtn();
+            App.showToast(`Payment failed: ${resp.error?.description || 'Please try another method'}`);
           });
 
           razorpayInstance.open();
           return;
         }
       } catch (err) {
-        console.warn("Razorpay popup error, proceeding with standard confirmation:", err);
+        console.warn("Razorpay live gateway not available, proceeding with direct studio order:", err);
       }
     }
 
-    // Direct / COD / Fallback Order placement
+    // Direct / UPI / COD Order placement (when Razorpay is not configured or in Direct mode)
     const orderData = {
       customerName,
       email,
@@ -366,7 +377,7 @@ const Store = {
     };
 
     const res = await API.createOrder(orderData);
-    if (submitBtn) submitBtn.disabled = false;
+    resetSubmitBtn();
 
     if (res.success) {
       const order = res.data;
@@ -380,10 +391,16 @@ const Store = {
     }
   },
 
-
   showOrderConfirmation(order) {
     const modalContent = document.getElementById('orderSuccessModalContent');
     if (modalContent) {
+      const isCod = (order.paymentMethod || '').includes('Cash on Delivery');
+      const isRazorpayVerified = (order.paymentMethod || '').includes('Razorpay');
+      const upiId = (App.settings && App.settings.upiId) || 'akanksha.lko30@oksbi';
+      const upiName = (App.settings && App.settings.name) || 'AKAMATOE';
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${order.totalAmount}&cu=INR`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(upiUrl)}`;
+
       modalContent.innerHTML = `
         <div style="text-align: center; padding: 1rem 0;">
           <div style="width: 70px; height: 70px; background: var(--color-pink-100); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.2rem;">
@@ -395,7 +412,7 @@ const Store = {
           <p style="font-family: var(--font-editorial); font-size: 1.2rem; color: var(--text-muted); font-style: italic; margin-bottom: 1.5rem;">
             Thank you, ${order.customerName}! Akanksha has received your order and is preparing your art package with love & handwritten notes.
           </p>
-          <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; text-align: left; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+          <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; text-align: left; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
               <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-pink-600);">Order ID: <strong>${order.id}</strong></span>
               <span style="font-size: 0.85rem; color: var(--text-light);">${new Date().toLocaleDateString()}</span>
@@ -406,9 +423,30 @@ const Store = {
               <strong>Payment Method:</strong> ${order.paymentMethod}
             </div>
             <div style="font-size: 1.15rem; font-weight: 700; color: var(--color-pink-600); text-align: right;">
-              Total Paid: ₹${order.totalAmount.toLocaleString('en-IN')}
+              Total Amount: ₹${order.totalAmount.toLocaleString('en-IN')}
             </div>
           </div>
+
+          ${!isCod && !isRazorpayVerified ? `
+            <div style="background: var(--color-pink-50); border: 1px dashed var(--color-pink-400); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; text-align: center;">
+              <h4 style="font-family: var(--font-serif); font-size: 1.1rem; color: var(--color-pink-700); margin-bottom: 0.35rem;">
+                📱 Instant UPI Payment
+              </h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Scan QR with Google Pay / PhonePe / Paytm or send <strong>₹${order.totalAmount.toLocaleString('en-IN')}</strong> to:
+              </p>
+              <div style="display: inline-block; background: white; padding: 0.35rem 0.85rem; border-radius: 999px; border: 1px solid var(--border-pink); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--color-pink-600); margin-bottom: 0.75rem;">
+                ${upiId}
+              </div>
+              <div style="width: 140px; height: 140px; margin: 0 auto 0.75rem; background: white; padding: 6px; border-radius: 8px; border: 1px solid var(--border-pink); box-shadow: var(--shadow-sm);">
+                <img src="${qrUrl}" alt="UPI Payment QR" style="width: 100%; height: 100%; object-fit: contain;" />
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-light); display: block;">
+                Scan & Pay to confirm dispatch immediately!
+              </span>
+            </div>
+          ` : ''}
+
           <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
             <button class="btn btn-primary" onclick="window.print()">
               🖨️ Print Receipt

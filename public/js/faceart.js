@@ -176,16 +176,6 @@ const FaceArt = {
         card.addEventListener('mouseleave', () => overlay.style.opacity = '0');
       }
     });
-
-    // Update booking section feature photo with custom setting or latest published Face Art
-    const bookingFeatureImg = document.getElementById('bookingFeatureImage');
-    if (bookingFeatureImg) {
-      if (App && App.settings && App.settings.bookingFeatureImage && App.settings.bookingFeatureImage.trim() !== '') {
-        bookingFeatureImg.src = App.settings.bookingFeatureImage;
-      } else if (this.faceArts.length > 0 && this.faceArts[0].image) {
-        bookingFeatureImg.src = this.faceArts[0].image;
-      }
-    }
   },
 
   openLightbox(index) {

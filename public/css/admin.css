@@ -208,6 +208,79 @@
   color: #0C5460;
 }
 
+.badge-paid {
+  background: #D4EDDA;
+  color: #155724;
+  border: 1px solid #C3E6CB;
+}
+
+.badge-topay {
+  background: #EBF8FF;
+  color: #2B6CB0;
+  border: 1px solid #BEE3F8;
+}
+
+.badge-notyet {
+  background: #FFF3CD;
+  color: #856404;
+  border: 1px solid #FFEEBA;
+}
+
+.badge-processing {
+  background: #E2E3E5;
+  color: #383D41;
+}
+
+.badge-shipped {
+  background: #D1ECF1;
+  color: #0C5460;
+}
+
+.badge-delivered {
+  background: #D4EDDA;
+  color: #155724;
+}
+
+.badge-cancelled {
+  background: #F8D7DA;
+  color: #721C24;
+}
+
+.status-select {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.status-select:focus {
+  border-color: var(--color-pink-500);
+  box-shadow: 0 0 0 2px rgba(230, 73, 114, 0.15);
+}
+
+.status-select-paid {
+  background: #F0FFF4;
+  color: #22543D;
+  border-color: #9AE6B4;
+}
+
+.status-select-topay {
+  background: #EBF8FF;
+  color: #2B6CB0;
+  border-color: #BEE3F8;
+}
+
+.status-select-notyet {
+  background: #FFFAF0;
+  color: #C05621;
+  border-color: #FBD38D;
+}
+
 .action-btn-group {
   display: flex;
   gap: 0.4rem;

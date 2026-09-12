@@ -782,26 +782,34 @@ const Admin = {
 
           <!-- Razorpay Payment Gateway Settings -->
           <div style="background: var(--color-pink-50); border: 1px solid var(--border-pink); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <span style="font-size: 1.2rem;">💳</span>
-              <strong style="font-size: 0.95rem; color: var(--color-pink-600);">Razorpay Payment Gateway Integration</strong>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.2rem;">💳</span>
+                <strong style="font-size: 0.95rem; color: var(--color-pink-600);">Razorpay Payment Gateway (Optional)</strong>
+              </div>
+              <span style="font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; ${s.razorpayKeyId && s.razorpayKeyId.startsWith('rzp_') ? 'background: #d4edda; color: #155724;' : 'background: #fff3cd; color: #856404;'}">
+                ${s.razorpayKeyId && s.razorpayKeyId.startsWith('rzp_') ? '🟢 Live Gateway Configured' : '⚪ Direct UPI / COD Mode Active'}
+              </span>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Enter your Razorpay API keys to accept real UPI (GPay/PhonePe), Credit/Debit Cards, and Netbanking with direct bank settlement.
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              To accept automatic cards & netbanking via Razorpay, generate API keys from <a href="https://dashboard.razorpay.com/#/app/keys" target="_blank" rel="noreferrer" style="color: var(--color-pink-600); text-decoration: underline; font-weight: 600;">Razorpay Dashboard → Settings → API Keys</a>.
+            </p>
+            <p style="font-size: 0.75rem; color: var(--color-earth-700); background: rgba(255,255,255,0.7); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem;">
+              💡 <em>Note: If you don't have Razorpay keys yet, leave them empty. Customers can pay instantly using your <strong>Direct UPI QR Code</strong> or Cash on Delivery without errors.</em>
             </p>
             <div class="form-grid" style="margin-bottom: 0.75rem;">
               <div class="form-group">
-                <label class="form-label" style="font-size: 0.8rem;">Razorpay Key ID</label>
+                <label class="form-label" style="font-size: 0.8rem;">Razorpay Key ID (e.g. rzp_test_... or rzp_live_...)</label>
                 <input type="text" name="razorpayKeyId" class="form-input" placeholder="rzp_test_... or rzp_live_..." value="${s.razorpayKeyId || ''}" />
               </div>
               <div class="form-group">
                 <label class="form-label" style="font-size: 0.8rem;">Razorpay Key Secret</label>
-                <input type="password" name="razorpayKeySecret" class="form-input" placeholder="••••••••••••" value="${s.razorpayKeySecret || ''}" />
+                <input type="password" name="razorpayKeySecret" class="form-input" placeholder="Generated from Razorpay dashboard" value="${s.razorpayKeySecret || ''}" />
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label" style="font-size: 0.8rem;">Direct UPI ID (for QR & Manual Payments)</label>
-              <input type="text" name="upiId" class="form-input" placeholder="e.g. 9517155681@okaxis" value="${s.upiId || '9517155681@okaxis'}" />
+              <label class="form-label" style="font-size: 0.8rem;">Direct UPI ID (for instant QR & GPay/PhonePe payments)</label>
+              <input type="text" name="upiId" class="form-input" placeholder="e.g. akanksha.lko30@oksbi" value="${s.upiId || 'akanksha.lko30@oksbi'}" />
             </div>
           </div>
 
@@ -1493,11 +1501,11 @@ const Admin = {
               gap: 1.5rem;
             ">
               ${faceArts.map((art) => {
-                const isPub = art.isPublished !== false;
-                const safeId = escapeHtml(art.id);
-                const safeImg = escapeHtml(art.image);
+            const isPub = art.isPublished !== false;
+            const safeId = escapeHtml(art.id);
+            const safeImg = escapeHtml(art.image);
 
-                return `
+            return `
                   <div style="
                     background: white;
                     border: 1px solid ${isPub ? 'var(--border-pink)' : '#e5e7eb'};
@@ -1536,10 +1544,10 @@ const Admin = {
                         padding: 0.3rem 0.65rem;
                         border-radius: 999px;
                         backdrop-filter: blur(8px);
-                        ${isPub 
-                          ? 'background: rgba(34, 197, 94, 0.9); color: white;' 
-                          : 'background: rgba(107, 114, 128, 0.9); color: white;'
-                        }
+                        ${isPub
+                ? 'background: rgba(34, 197, 94, 0.9); color: white;'
+                : 'background: rgba(107, 114, 128, 0.9); color: white;'
+              }
                       ">
                         ${isPub ? '✓ Public' : 'Hidden'}
                       </span>
@@ -1568,10 +1576,10 @@ const Admin = {
                             flex: 1;
                             font-size: 0.78rem;
                             padding: 0.4rem 0.6rem;
-                            ${isPub 
-                              ? 'background: #f3f4f6; color: #4b5563;' 
-                              : 'background: var(--color-pink-50); color: var(--color-pink-600); border: 1px solid var(--border-pink);'
-                            }
+                            ${isPub
+                ? 'background: #f3f4f6; color: #4b5563;'
+                : 'background: var(--color-pink-50); color: var(--color-pink-600); border: 1px solid var(--border-pink);'
+              }
                           "
                           onclick="Admin.toggleFaceArtPublished('${safeId}', ${!isPub})"
                         >
@@ -1589,7 +1597,7 @@ const Admin = {
                     </div>
                   </div>
                 `;
-              }).join('')}
+          }).join('')}
             </div>
           `
         }

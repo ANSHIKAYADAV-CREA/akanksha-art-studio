@@ -6,10 +6,10 @@
 const App = {
   async init() {
     console.log("🌸 Initializing Akanksha Art Studio App...");
-    
+
     // Bind global navigation and modal handlers
     this.bindGlobalEvents();
-    
+
     // Fetch and apply live settings from API
     await this.loadSettings();
 
@@ -19,7 +19,7 @@ const App = {
       if (cachedHero) {
         document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = cachedHero);
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Initialize sub-modules
     await Gallery.init();
@@ -67,7 +67,7 @@ const App = {
     // Dynamic Artist Image: uses admin photo if uploaded, otherwise placeholder
     const placeholderHero = 'images/artist-placeholder.svg';
     if (s.artistImage && s.artistImage.trim() !== '') {
-      try { localStorage.setItem('cached_hero_photo', s.artistImage); } catch (e) {}
+      try { localStorage.setItem('cached_hero_photo', s.artistImage); } catch (e) { }
       document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = s.artistImage);
     } else {
       document.querySelectorAll('.dyn-artist-img').forEach(el => el.src = placeholderHero);
@@ -175,7 +175,7 @@ const App = {
     const msgInput = document.getElementById('contactMessageInput');
     if (subjInput) subjInput.value = `Custom Commission: Similar to "${artTitle}"`;
     if (msgInput) msgInput.value = `Hi Akanksha! I loved your piece "${artTitle}" and would love to commission a custom original artwork for my space with similar palette and vibe.`;
-    
+
     const contactSection = document.getElementById('contact');
     if (contactSection) {
       contactSection.scrollIntoView({ behavior: 'smooth' });
@@ -230,7 +230,7 @@ const App = {
 
   shareLink(title, url) {
     if (navigator.share) {
-      navigator.share({ title, url }).catch(() => {});
+      navigator.share({ title, url }).catch(() => { });
     } else {
       navigator.clipboard.writeText(url);
       App.showToast('🔗 Link copied to clipboard!');

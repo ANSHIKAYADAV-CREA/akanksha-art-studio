@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AKAMATOE | unwearied creation</title>
   <meta name="description"
-    content="Official portfolio and aesthetic studio of AKAMATOE. Original fine art paintings, bespoke face painting bookings, and handcrafted artifacts." />
+    content="Official portfolio and aesthetic studio of AKAMATOE. Original fine art paintings, face art gallery, and handcrafted artifacts." />
   <meta name="keywords"
-    content="AKAMATOE, art studio, face painting, Delhi artist, fine art, Hindu College University of Delhi, canvas paintings, artifacts" />
+    content="AKAMATOE, art studio, face art gallery, Delhi artist, fine art, Hindu College University of Delhi, canvas paintings, artifacts" />
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
 
@@ -51,10 +51,9 @@
 
       <!-- Action Buttons -->
       <div class="header-actions">
-        <button class="btn btn-primary btn-sm"
-          onclick="document.getElementById('facepainting').scrollIntoView({behavior:'smooth'})">
-          Book Face Art
-        </button>
+        <a href="#store" class="btn btn-primary btn-sm">
+          🛍️ Shop Artifacts
+        </a>
 
         <!-- Shopping Cart Button -->
         <button class="btn-icon" id="openCartBtn" title="Shopping Bag" aria-label="Shopping Bag">
@@ -96,10 +95,10 @@
       <li><a href="#contact" class="nav-link">Contact</a></li>
     </ul>
     <div style="margin-top: auto; display: flex; flex-direction: column; gap: 0.75rem;">
-      <button class="btn btn-primary"
-        onclick="document.getElementById('facepainting').scrollIntoView({behavior:'smooth'}); document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open');">
-        🎨 Book Face Painting
-      </button>
+      <a href="#store" class="btn btn-primary"
+        onclick="document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open');">
+        🛍️ Shop Art & Artifacts
+      </a>
       <button class="btn btn-secondary btn-sm"
         onclick="Admin.open(); document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open');">
         🔑 Admin Studio Portal
@@ -171,7 +170,7 @@
                 🎨 <span>Specialty:</span> <strong>Fine Art & Mixed Media</strong>
               </div>
               <div class="hero-tag-pill">
-                🎭 <span>Services:</span> <strong>Face & Body Painting</strong>
+                ✨ <span>Focus:</span> <strong>Original Art & Artifacts</strong>
               </div>
               <div class="hero-tag-pill">
                 📍 <span>Location:</span> <strong>New Delhi, India</strong>
@@ -258,234 +257,192 @@
       </div>
     </section>
 
-    <!-- FACE PAINTING & CREATIVE SERVICES SECTION (BOOKINGS BELOW FACE ART GALLERY) -->
-    <section class="section" id="facepainting" style="background: var(--bg-surface-elevated);">
+    <!-- =========================================
+     FACE PAINTING BOOKINGS SECTION (NO PRICING)
+     ========================================= -->
+    <section class="section" id="facepainting"
+      style="background: linear-gradient(180deg, rgba(255, 245, 247, 0.6) 0%, rgba(255, 255, 255, 0.95) 100%);">
       <div class="container">
+
         <div class="section-header">
-          <span class="section-tag">Creative Services</span>
-          <h2 class="section-title">Face Painting & Body Art Bookings</h2>
-          <p class="section-subtitle">Wearable art for college fests, editorial photoshoots, and celebrations.</p>
+          <span class="section-tag">Delhi NCR & Campus Bookings</span>
+          <h2 class="section-title">Book Face Art for Fests & Gatherings</h2>
+          <p class="section-subtitle">
+            Available for college fests (Hindu College & DU North/South Campus), cultural gatherings, themed parties,
+            and creative photoshoots across Delhi NCR.
+          </p>
         </div>
 
         <div class="booking-wrapper">
-
-          <!-- LEFT: Creative Face Art Photo Spotlight Section -->
-          <div class="booking-sidebar booking-photo-sidebar"
-            style="display: flex; flex-direction: column; justify-content: space-between; padding: 2.25rem;">
+          <!-- Left Sidebar: Main Place Card & Feature Highlights -->
+          <div class="booking-sidebar">
             <div>
-              <div
-                style="position: relative; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-md); border: 2px solid var(--border-pink); background: white; margin-bottom: 1.5rem;">
-                <div class="washi-tape"
-                  style="top: -10px; left: 50%; transform: translateX(-50%) rotate(-1deg); z-index: 2;"></div>
-                <div style="aspect-ratio: 4/5; overflow: hidden; position: relative;">
-                  <img id="bookingFeatureImage"
-                    src="https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=900&q=80"
-                    alt="Face Art Experience"
-                    style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease;"
-                    onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'" />
+              <!-- MAIN FACE ART PLACE CARD (Admin Editable via Admin Panel) -->
+              <div class="faceart-spotlight-card"
+                style="margin-bottom: 2rem; position: relative; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 12px 36px rgba(224, 49, 105, 0.14); border: 2px solid var(--border-pink); background: white;">
+                <div style="position: relative; height: 350px; width: 100%; overflow: hidden; background: #fff5f7;">
+                  <img id="mainFaceArtSpotlightImg" class="dyn-booking-feature-img"
+                    src="https://res.cloudinary.com/wempi94r/image/upload/v1788446134/akanksha-art-studio/e9mi7t9zajv9kc9dbapb.jpg"
+                    alt="Featured Face Art Look"
+                    style="width: 100%; height: 100%; object-fit: cover; object-position: center 20%; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);"
+                    onerror="this.onerror=null; this.src='https://res.cloudinary.com/wempi94r/image/upload/v1788446134/akanksha-art-studio/e9mi7t9zajv9kc9dbapb.jpg';" />
                   <div
-                    style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, transparent 0%, rgba(30, 20, 24, 0.85) 100%); padding: 1.25rem 1rem 0.85rem; color: white;">
-                    <span
-                      style="display: inline-block; background: rgba(224, 76, 120, 0.9); font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.35rem;">Live
-                      Showcase</span>
-                    <h4 style="font-family: var(--font-serif); font-size: 1.15rem; margin: 0; color: #FFF;">Expressive
-                      Pigments & Face Art</h4>
+                    style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 40%, rgba(0,0,0,0.5) 100%); pointer-events: none;">
                   </div>
+                  <span class="product-tag"
+                    style="position: absolute; top: 16px; left: 16px; background: var(--color-pink-600); color: white; box-shadow: 0 4px 14px rgba(0,0,0,0.3); font-weight: 600; font-size: 0.85rem; padding: 0.4rem 0.95rem; border-radius: 999px;">
+                    ✨ Featured Face Art Look
+                  </span>
+                </div>
+                <div style="padding: 1.5rem 1.6rem; background: linear-gradient(180deg, #FFFFFF 0%, #FFF9FA 100%);">
+                  <h4 id="mainFaceArtCardTitle" class="dyn-booking-feature-title"
+                    style="font-family: var(--font-serif); font-size: 1.45rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main); letter-spacing: -0.01em;">
+                    Ethereal Fest & Editorial Look
+                  </h4>
+                  <p id="mainFaceArtCardSubtitle" class="dyn-booking-feature-subtitle"
+                    style="font-size: 0.95rem; color: var(--text-muted); margin: 0; line-height: 1.55;">
+                    Hand-painted bespoke motifs created by Akanksha for university fests and cultural gatherings.
+                  </p>
                 </div>
               </div>
 
-              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 1.25rem;">
-                Bespoke wearable art created with cosmetic-grade, skin-safe non-toxic pigments, holographic glitters,
-                and celestial motifs.
+              <span class="section-tag" style="margin-bottom: 0.5rem; display: inline-block;">🎨 The Face Art
+                Experience</span>
+              <h3
+                style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-main);">
+                Bespoke Face Painting for Events
+              </h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem;">
+                Transform your college fest, club event, or creative gathering with radiant, aesthetic face art and
+                editorial glitter styles.
               </p>
 
-              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">🎭 Festival
-                  Looks</span>
-                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">📸 Editorial
-                  Shoots</span>
-                <span class="hero-tag-pill" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">🌸 Skin-Safe
-                  Pigments</span>
+              <!-- Highlight 1 -->
+              <div class="booking-service-card">
+                <div class="booking-service-title">🌸 100% Skin-Safe Cosmetic Pigments</div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+                  Hypoallergenic, dermatologist-approved water-activated paints and bio-glitters that wash off
+                  effortlessly with water.
+                </p>
+              </div>
+
+              <!-- Highlight 2 -->
+              <div class="booking-service-card">
+                <div class="booking-service-title">⚡ Fast Fest Turnaround</div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+                  Bespoke 2-5 min express looks designed specifically to handle energetic fest queues and crowd flows.
+                </p>
+              </div>
+
+              <!-- Highlight 3 -->
+              <div class="booking-service-card">
+                <div class="booking-service-title">🏛️ Delhi NCR & College Fests</div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+                  Serving Hindu College, Hansraj, St. Stephen's, Miranda House, LSR, IIT Delhi, cultural clubs, cafes,
+                  and private gatherings.
+                </p>
               </div>
             </div>
 
-            <!-- Preserved hidden price elements for calculation compatibility -->
-            <div style="display: none;" aria-hidden="true">
-              <span id="facePriceFest">₹0</span>
-              <span id="facePriceEditorial">₹0</span>
-              <span id="facePricePrivate">₹0</span>
-            </div>
-
-            <div style="margin-top: 1.5rem; font-size: 0.825rem; color: var(--color-earth-700); font-weight: 500;">
-              📍 Available across Delhi NCR & North/South Campus.
+            <div
+              style="background: rgba(255, 255, 255, 0.8); padding: 1rem; border-radius: var(--radius-md); border: 1px dashed var(--border-pink); margin-top: 1rem;">
+              <p style="font-size: 0.8rem; color: var(--color-pink-600); font-weight: 500; margin: 0;">
+                💌 Submit your booking details below. Akanksha will review your event date and reach out via WhatsApp /
+                Email to confirm.
+              </p>
             </div>
           </div>
-          <!-- END LEFT PHOTO SPOTLIGHT -->
 
-          <!-- RIGHT: BOOKING FORM -->
+          <!-- Right: Clean Booking Form (No Prices) -->
           <div class="booking-form-wrap">
-
-            <h3 style="
-      font-family: var(--font-serif);
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    ">
-              Reserve a Booking Slot
+            <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.5rem;">
+              Request a Face Art Booking
             </h3>
-
-            <p style="
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 1.5rem;
-    ">
-              Select your preferred date, time slot, and guest size
-              for instant fee calculation.
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.75rem;">
+              Fill in your event details below to reserve dates and discuss custom motifs.
             </p>
 
             <form id="facePaintBookingForm">
-
               <div class="form-grid">
-
+                <!-- Name -->
                 <div class="form-group">
-                  <label class="form-label">Your Name</label>
-                  <input type="text" name="clientName" class="form-input" placeholder="e.g. Tanya Sharma" required />
+                  <label class="form-label" for="bookingNameInput">Your Name / Convener Name *</label>
+                  <input type="text" id="bookingNameInput" name="clientName" class="form-input"
+                    placeholder="e.g. Aarav Sharma" required />
                 </div>
 
+                <!-- Email -->
                 <div class="form-group">
-                  <label class="form-label">WhatsApp / Phone</label>
-                  <input type="tel" name="clientPhone" class="form-input" placeholder="e.g. 9810123456" required />
+                  <label class="form-label" for="bookingEmailInput">Email Address *</label>
+                  <input type="email" id="bookingEmailInput" name="clientEmail" class="form-input"
+                    placeholder="e.g. aarav@gmail.com" required />
                 </div>
 
+                <!-- Phone -->
                 <div class="form-group">
-                  <label class="form-label">Email Address</label>
-                  <input type="email" name="clientEmail" class="form-input" placeholder="name@domain.com" required />
+                  <label class="form-label" for="bookingPhoneInput">Phone / WhatsApp Number *</label>
+                  <input type="tel" id="bookingPhoneInput" name="clientPhone" class="form-input"
+                    placeholder="e.g. +91 98123 45678" required />
                 </div>
 
+                <!-- Event Type -->
                 <div class="form-group">
-                  <label class="form-label">Event Category</label>
-
-                  <select name="eventType" id="bookingEventType" class="form-select" required>
-                    <option value="College Fest / Cultural Event">
-                      College Fest / Cultural Event
-                    </option>
-
-                    <option value="Editorial / Fashion Photoshoot">
-                      Editorial / Fashion Photoshoot
-                    </option>
-
-                    <option value="Birthday & Private Party">
-                      Birthday & Private Party
-                    </option>
-
-                    <option value="Bridal & Festival Glam">
-                      Bridal & Festival Glam
-                    </option>
-
-                    <option value="Custom Body Painting">
-                      Custom Body Painting
-                    </option>
+                  <label class="form-label" for="bookingEventType">Event Type *</label>
+                  <select id="bookingEventType" name="eventType" class="form-select" required>
+                    <option value="College Fest / Cultural Event">College Fest / Cultural Event</option>
+                    <option value="Private Gathering / Party">Private Gathering / Party</option>
+                    <option value="Themed / Birthday Event">Themed / Birthday Event</option>
+                    <option value="Editorial / Creative Photoshoot">Editorial / Creative Photoshoot</option>
+                    <option value="Other Creative Event">Other Creative Event</option>
                   </select>
-
                 </div>
 
+                <!-- Event Date -->
                 <div class="form-group">
-                  <label class="form-label">Event Date</label>
-
-                  <input type="date" name="eventDate" id="bookingDateInput" class="form-input" required />
+                  <label class="form-label" for="bookingDateInput">Event Date *</label>
+                  <input type="date" id="bookingDateInput" name="eventDate" class="form-input" required />
                 </div>
 
+                <!-- Time Slot -->
                 <div class="form-group">
-                  <label class="form-label">Expected Guest Size</label>
-
-                  <input type="number" name="guestCount" id="bookingGuestCount" class="form-input" value="15" min="1"
-                    max="500" required />
+                  <label class="form-label" for="bookingTimeSlot">Preferred Time Slot *</label>
+                  <select id="bookingTimeSlot" name="timeSlot" class="form-select" required>
+                    <option value="Morning (10:00 AM - 1:00 PM)">Morning (10:00 AM - 1:00 PM)</option>
+                    <option value="Afternoon (2:00 PM - 5:00 PM)" selected>Afternoon (2:00 PM - 5:00 PM)</option>
+                    <option value="Evening (6:00 PM - 9:00 PM)">Evening (6:00 PM - 9:00 PM)</option>
+                    <option value="Full Day Fest">Full Day Fest</option>
+                  </select>
                 </div>
 
+                <!-- Expected Guests / Footfall -->
+                <div class="form-group">
+                  <label class="form-label" for="bookingGuestCount">Estimated Attendees / Queue</label>
+                  <input type="number" id="bookingGuestCount" name="guestCount" class="form-input" placeholder="e.g. 25"
+                    min="1" value="20" />
+                </div>
+
+                <!-- Location / Campus -->
+                <div class="form-group">
+                  <label class="form-label" for="bookingLocation">Location / College Campus *</label>
+                  <input type="text" id="bookingLocation" name="location" class="form-input"
+                    placeholder="e.g. Hindu College, North Campus" required />
+                </div>
+
+                <!-- Notes / Theme -->
                 <div class="form-group full-width">
-
-                  <label class="form-label">
-                    Preferred Time Slot
-                  </label>
-
-                  <div class="slot-chips-grid">
-
-                    <div class="slot-chip" data-slot="Morning (10:00 AM - 1:00 PM)">
-                      Morning (10 AM - 1 PM)
-                    </div>
-
-                    <div class="slot-chip selected" data-slot="Afternoon (2:00 PM - 5:00 PM)">
-                      Afternoon (2 PM - 5 PM)
-                    </div>
-
-                    <div class="slot-chip" data-slot="Evening (6:00 PM - 9:00 PM)">
-                      Evening (6 PM - 9 PM)
-                    </div>
-
-                  </div>
-
+                  <label class="form-label" for="bookingNotes">Special Requests / Theme / Notes</label>
+                  <textarea id="bookingNotes" name="notes" class="form-textarea" rows="3"
+                    placeholder="Tell us about your event theme, specific face art motifs, college society details, etc."></textarea>
                 </div>
-
-                <div class="form-group full-width">
-
-                  <label class="form-label">
-                    Event Venue / Location in Delhi NCR
-                  </label>
-
-                  <input type="text" name="location" class="form-input" placeholder="e.g. Event venue, Delhi NCR"
-                    required />
-
-                </div>
-
-                <div class="form-group full-width">
-
-                  <label class="form-label">
-                    Special Themes or Notes (Optional)
-                  </label>
-
-                  <textarea name="notes" class="form-textarea" rows="2"
-                    placeholder="Tell Akanksha about your aesthetic vision, color palettes, or fest vibe..."></textarea>
-
-                </div>
-
               </div>
 
-
-              <!-- PRICE -->
-              <div class="price-estimate-box">
-
-                <div>
-
-                  <span class="estimate-label">
-                    Estimated Service Package
-                  </span>
-
-                  <div style="
-            font-size: 0.8rem;
-            color: var(--text-light);
-          ">
-                    Includes all professional paints & glitters
-                  </div>
-
-                </div>
-
-                <div class="estimate-val" id="bookingEstimateVal">
-                  ₹3,500
-                </div>
-
-              </div>
-
-
-              <!-- SUBMIT -->
-              <button type="submit" class="btn btn-primary" style="width: 100%;">
-                🎨 Submit Face Painting Booking Request
+              <button type="submit" class="btn btn-primary" id="bookingSubmitBtn" style="width: 100%; padding: 0.9rem;">
+                ✨ Send Face Art Booking Request
               </button>
-
             </form>
-
           </div>
-          <!-- END RIGHT BOOKING FORM -->
-
         </div>
+
       </div>
     </section>
 
@@ -659,8 +616,8 @@
         <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
           <a href="#gallery" class="nav-link" style="font-size: 0.875rem;">Art Gallery</a>
           <a href="#faceart-gallery" class="nav-link" style="font-size: 0.875rem;">Face Art Gallery</a>
-          <a href="#facepainting" class="nav-link" style="font-size: 0.875rem;">Face Painting</a>
           <a href="#store" class="nav-link" style="font-size: 0.875rem;">Artifacts</a>
+          <a href="#contact" class="nav-link" style="font-size: 0.875rem;">Contact</a>
           <button
             style="background: none; border: none; font-size: 0.875rem; color: var(--color-pink-600); cursor: pointer; font-weight: 600;"
             onclick="Admin.open()">
@@ -745,32 +702,33 @@
           <input type="text" name="customerName" class="form-input" placeholder="Recipient's Name" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Phone Number (For Courier Tracking)</label>
+          <label class="form-label">Phone Number (For Courier Tracking & Updates)</label>
           <input type="tel" name="phone" class="form-input" placeholder="e.g. 9810123456" required />
         </div>
         <div class="form-group full-width">
-          <label class="form-label">Email Address (For Invoice)</label>
+          <label class="form-label">Email Address (For Invoice & Dispatch Receipt)</label>
           <input type="email" name="email" class="form-input" placeholder="email@domain.com" required />
         </div>
         <div class="form-group full-width">
-          <label class="form-label">Complete Shipping Address with PIN Code</label>
+          <label class="form-label">Complete Shipping / Delivery Address with PIN Code</label>
           <textarea name="address" class="form-textarea" rows="3"
-            placeholder="House/Flat No, Street, Landmark, City, State - PIN" required></textarea>
+            placeholder="House/Flat No, Apartment/Society, Street, Landmark, City, State - PIN Code"
+            required></textarea>
         </div>
         <div class="form-group full-width">
           <label class="form-label">Payment Method</label>
-          <select name="paymentMethod" class="form-select" required>
+          <select name="paymentMethod" class="form-select" id="checkoutPaymentMethodSelect" required>
+            <option value="Cash on Delivery">Cash on Delivery (Pay in Cash upon Arrival)</option>
             <option value="UPI (Google Pay / PhonePe / Paytm)">UPI QR / Google Pay / PhonePe / Paytm (Instant)</option>
             <option value="Credit / Debit Card">Credit / Debit Card</option>
             <option value="Net Banking">Net Banking</option>
-            <option value="Cash on Delivery">Cash on Delivery (COD)</option>
           </select>
         </div>
       </div>
 
       <!-- UPI QR Simulation Box -->
       <!-- UPI PAYMENT QR -->
-      <div style="
+      <div id="checkoutUpiBox" style="
     background: var(--color-pink-50);
     border: 1px dashed var(--color-pink-400);
     padding: 1rem;
@@ -815,13 +773,13 @@
         color: var(--text-muted);
       ">
             Scan the QR code using Google Pay, PhonePe,
-            Paytm or another UPI app.
+            Paytm or any UPI app.
           </span>
         </div>
       </div>
 
       <button type="submit" class="btn btn-primary" style="width: 100%;">
-        🌸 Complete Order & Pay
+        🌸 Place Order
       </button>
     </form>
   </div>
@@ -861,8 +819,7 @@
 
       <div class="form-group" style="margin-bottom: 1rem;">
         <label class="form-label">Role or Event (Optional)</label>
-        <input type="text" name="reviewerRole" class="form-input"
-          placeholder="e.g. Art Collector / Mecca Fest Attendee" />
+        <input type="text" name="reviewerRole" class="form-input" placeholder="e.g. Art Collector / Art Enthusiast" />
       </div>
 
       <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -877,19 +834,45 @@
     </form>
   </div>
 
-  <!-- 6. BOOKING SUCCESS MODAL -->
-  <div class="modal-container" id="bookingSuccessModal" style="width: 580px;">
+  <!-- 5. BOOKING SUCCESS MODAL -->
+  <div class="modal-container" id="bookingSuccessModal" style="width: 540px;">
     <button class="modal-close-btn" data-target-modal="bookingSuccessModal">✕</button>
-    <div id="bookingSuccessModalContent"></div>
+    <div style="text-align: center; padding: 1.5rem 0.5rem;">
+      <div style="font-size: 3.5rem; margin-bottom: 1rem;">🌸✨</div>
+      <h2
+        style="font-family: var(--font-serif); font-size: 1.9rem; margin-bottom: 0.5rem; color: var(--color-pink-600);">
+        Booking Request Sent!
+      </h2>
+      <p style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 1.5rem; line-height: 1.6;"
+        id="bookingSuccessModalMsg">
+        Thank you! Akanksha has received your face art booking request. She will review your event date and reach out
+        via WhatsApp / Email to confirm the details.
+      </p>
+      <div
+        style="background: rgba(255, 245, 247, 0.8); border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.75rem; text-align: left;">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+          📅 <strong>Event:</strong> <span id="successBookingEvent">College Fest / Event</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+          📍 <strong>Venue:</strong> <span id="successBookingLocation">Delhi NCR</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+          ⏰ <strong>Slot:</strong> <span id="successBookingSlot">Afternoon</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="App.closeAllModals();" style="width: 100%;">
+        Done ✨
+      </button>
+    </div>
   </div>
 
-  <!-- 7. ORDER SUCCESS MODAL -->
+  <!-- 6. ORDER SUCCESS MODAL -->
   <div class="modal-container" id="orderSuccessModal" style="width: 580px;">
     <button class="modal-close-btn" data-target-modal="orderSuccessModal">✕</button>
     <div id="orderSuccessModalContent"></div>
   </div>
 
-  <!-- 8. ADMIN DASHBOARD & CMS PORTAL -->
+  <!-- 7. ADMIN DASHBOARD & CMS PORTAL -->
   <div class="admin-modal-container" id="adminModal">
     <div class="admin-header">
       <div class="admin-title-wrap">
@@ -905,7 +888,8 @@
     <div id="adminLoginView" class="admin-login-box">
       <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
       <h3 style="font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 0.5rem;">Studio Login</h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter PIN to manage artworks, store items, bookings, and
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter PIN to manage artworks, bookings, store items,
+        customer orders, and
         site quote.</p>
 
       <form id="adminLoginForm">
@@ -926,13 +910,13 @@
       <!-- Sidebar -->
       <aside class="admin-sidebar">
         <button class="admin-nav-item active" data-tab="overview">📊 Overview & Stats</button>
+        <button class="admin-nav-item" data-tab="orders">📦 Customer Orders</button>
+        <button class="admin-nav-item" data-tab="bookings">📅 Face Paint Bookings</button>
         <button class="admin-nav-item" data-tab="artworks">🎨 Manage Artworks</button>
         <button class="admin-nav-item" data-tab="facearts">✨ Face Art Gallery</button>
+        <button class="admin-nav-item" data-tab="placecard">🖼️ Face Art Place Card</button>
         <button class="admin-nav-item" data-tab="products">🛍️ Store Artifacts</button>
-        <button class="admin-nav-item" data-tab="bookings">📅 Face Paint Bookings</button>
-        <button class="admin-nav-item" data-tab="booking-photo">📸 Booking Spotlight Photo</button>
         <button class="admin-nav-item" data-tab="reviews">⭐ Collector Reviews</button>
-        <button class="admin-nav-item" data-tab="orders">📦 Customer Orders</button>
         <button class="admin-nav-item" data-tab="settings">⚙️ Edit Bio & Contacts</button>
       </aside>
 
@@ -947,8 +931,8 @@
   <script src="js/api.js"></script>
   <script src="js/gallery.js"></script>
   <script src="js/faceart.js"></script>
-  <script src="js/store.js"></script>
   <script src="js/booking.js"></script>
+  <script src="js/store.js"></script>
   <script src="js/reviews.js"></script>
   <script src="js/contact.js"></script>
   <script src="js/admin.js"></script>
