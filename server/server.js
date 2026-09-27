@@ -1040,6 +1040,11 @@ app.post('/api/contact', (req, res) => {
   });
 });
 
+// Dedicated Studio Admin Landing & Management Suite
+app.get(['/admin', '/admin.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+});
+
 // Fallback all non-API to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));

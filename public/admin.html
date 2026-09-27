@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKAMATOE Studio OS — Admin Management Suite</title>
+  <meta name="description"
+    content="Dedicated studio content management and administration portal for Akanksha Art Portfolio. Manage artworks, orders, bookings, face art gallery, reviews, and studio settings." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Italiana&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>" />
+</head>
+
+<body class="admin-standalone-page">
+
+  <!-- =========================================================================
+       SECTION 1: ADMIN LANDING & ACCESS GATEWAY (When Logged Out)
+       ========================================================================= -->
+  <section id="adminLandingSection" class="admin-landing-hero">
+    <!-- Ambient artistic backdrop glows -->
+    <div class="admin-landing-glow glow-1"></div>
+    <div class="admin-landing-glow glow-2"></div>
+    <div class="admin-landing-glow glow-3"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="admin-landing-nav">
+      <div class="admin-landing-nav-inner">
+        <a href="index.html" class="admin-brand-group">
+          <span class="admin-brand-icon">🌸</span>
+          <div>
+            <div class="admin-brand-title">AKAMATOE</div>
+            <div class="admin-brand-subtitle">Studio OS &bull; Management Suite</div>
+          </div>
+        </a>
+
+        <div class="admin-nav-actions">
+          <a href="index.html" class="btn-return-home" title="Back to visitor website">
+            <span class="icon">←</span>
+            <span>View Public Website</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Landing Container -->
+    <div class="admin-landing-container">
+      
+      <!-- Headline & Introduction -->
+      <div class="admin-landing-intro">
+        <div class="admin-pill-badge">
+          <span class="badge-dot"></span>
+          <span>Studio Management Suite</span>
+        </div>
+        <h1 class="admin-hero-heading">
+          Artist Studio &amp; Content <br />
+          <span class="text-gradient-pink">Control Center</span>
+        </h1>
+        <p class="admin-hero-sub">
+          Welcome, Akanksha. Curate your original canvas collection, oversee customer orders,
+          manage face painting event requests, track studio metrics, and tailor your portfolio branding in real time.
+        </p>
+      </div>
+
+      <!-- Centered Interactive Login Card -->
+      <div class="admin-login-card-wrapper">
+        <div class="admin-login-card">
+          <div class="login-card-header">
+            <div class="login-icon-wrap">
+              <span class="login-icon">🔐</span>
+            </div>
+            <h2 class="login-title">Studio Access Login</h2>
+            <p class="login-desc">Enter your administrative PIN to access your studio workspace</p>
+          </div>
+
+          <form id="adminLoginForm" class="admin-login-form" onsubmit="Admin.handleLogin(event)">
+            <div class="pin-input-group">
+              <label for="adminPinInput" class="pin-label">Studio Master PIN</label>
+              <div class="pin-input-wrap">
+                <input 
+                  type="password" 
+                  id="adminPinInput" 
+                  class="admin-pin-input-field" 
+                  placeholder="••••" 
+                  autocomplete="current-password"
+                  maxlength="50" 
+                  required 
+                  autofocus
+                />
+                <button type="button" id="togglePinVisibilityBtn" class="pin-toggle-btn" title="Toggle visibility" aria-label="Toggle PIN Visibility">
+                  👁️
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick helper pill -->
+            <div class="pin-helper-row">
+              <span class="security-status-indicator" style="color: var(--color-pink-600); font-weight: 600; font-size: 0.75rem;">
+                🌸 Akanksha Studio Portal
+              </span>
+              <label class="remember-label">
+                <input type="checkbox" id="adminRememberMe" checked />
+                <span>Remember on this browser</span>
+              </label>
+            </div>
+
+            <!-- Error container -->
+            <div id="adminLoginError" class="admin-login-error-msg"></div>
+
+            <button type="submit" id="adminLoginSubmitBtn" class="btn-unlock-dashboard">
+              <span>Unlock Studio Dashboard</span>
+              <span class="arrow-icon">→</span>
+            </button>
+          </form>
+
+          <div class="login-card-footer">
+            <div class="security-pill">
+              <span class="lock-mini">🛡️</span>
+              <span>Protected Session &bull; Firestore &bull; Cloudinary Ready</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Capabilities Showcase Grid -->
+      <div class="admin-features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3 class="feature-title">Art Gallery Showcase</h3>
+          <p class="feature-desc">Upload high-resolution canvas paintings to Cloudinary, update dimensions and prices, and toggle sold status with instant live website sync.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">✨</div>
+          <h3 class="feature-title">Face Art Portfolio</h3>
+          <p class="feature-desc">Manage creative looks and festival face painting photos. Toggle public visibility or hide experimental work with a single tap.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3 class="feature-title">Orders &amp; Artifacts Store</h3>
+          <p class="feature-desc">Fulfill collector orders, track delivery addresses and contact numbers, and monitor payments via Razorpay, Direct UPI, or COD.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📅</div>
+          <h3 class="feature-title">Bookings &amp; Custom Pricing</h3>
+          <p class="feature-desc">Review incoming client requests for college fests, shoots, and private celebrations. Update dynamic hourly rates and booking photos.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Landing Footer -->
+    <footer class="admin-landing-footer">
+      <div class="footer-inner">
+        <div>&copy; 2026 AKAMATOE &bull; Akanksha Art Studio CMS</div>
+        <div class="footer-links">
+          <a href="index.html">Live Website</a>
+          <span>&bull;</span>
+          <a href="index.html#gallery">Artworks</a>
+          <span>&bull;</span>
+          <a href="index.html#store">Artifacts Store</a>
+          <span>&bull;</span>
+          <a href="index.html#contact">Inquiries</a>
+        </div>
+      </div>
+    </footer>
+  </section>
+
+
+  <!-- =========================================================================
+       SECTION 2: COMPLETE STUDIO DASHBOARD WORKSPACE (When Logged In)
+       ========================================================================= -->
+  <section id="adminDashboardSection" class="admin-standalone-dashboard" style="display: none;">
+    
+    <!-- Top Executive Header -->
+    <header class="admin-top-bar">
+      <div class="top-bar-left">
+        <!-- Mobile Sidebar Toggle -->
+        <button id="adminMobileSidebarToggle" class="admin-mobile-toggle" aria-label="Toggle navigation menu">
+          <span></span><span></span><span></span>
+        </button>
+
+        <a href="admin.html" class="dashboard-brand">
+          <span class="brand-flower">🌸</span>
+          <span class="brand-text">AKAMATOE <span class="brand-tag">CMS</span></span>
+        </a>
+
+        <div class="live-status-pill">
+          <span class="pulse-indicator"></span>
+          <span>Firestore Connected</span>
+        </div>
+      </div>
+
+      <div class="top-bar-center">
+        <div id="adminLiveClock" class="admin-live-clock">--:-- -- &bull; Loading date...</div>
+      </div>
+
+      <div class="top-bar-right">
+        <a href="index.html" target="_blank" class="btn-preview-link" title="Open live public portfolio in new tab">
+          <span>👁️ View Live Portfolio</span>
+          <span class="external-icon">↗</span>
+        </a>
+
+        <button class="btn btn-primary btn-sm btn-quick-art" onclick="Admin.openAddArtworkModal()">
+          <span>🎨 + Add Artwork</span>
+        </button>
+
+        <div class="admin-user-pill">
+          <span class="user-avatar">🌸</span>
+          <span class="user-name">Akanksha</span>
+          <span class="user-role">Owner</span>
+        </div>
+
+        <button class="btn-lock-studio" onclick="Admin.logout()" title="Lock dashboard &amp; sign out">
+          <span>🔒 Lock Studio</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (Sidebar + Content) -->
+    <div class="admin-workspace-body">
+      
+      <!-- Left Sidebar Navigation -->
+      <aside class="admin-main-sidebar" id="adminSidebarNav">
+        <div class="sidebar-heading">Studio Management</div>
+        <nav class="sidebar-nav-list">
+          <button class="admin-nav-item active" data-tab="overview" onclick="Admin.switchTab('overview')">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Overview &amp; Stats</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="orders" onclick="Admin.switchTab('orders')">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Customer Orders</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="bookings" onclick="Admin.switchTab('bookings')">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Face Paint Bookings</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="artworks" onclick="Admin.switchTab('artworks')">
+            <span class="nav-icon">🎨</span>
+            <span class="nav-label">Manage Artworks</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="facearts" onclick="Admin.switchTab('facearts')">
+            <span class="nav-icon">✨</span>
+            <span class="nav-label">Face Art Gallery</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="booking-photo" onclick="Admin.switchTab('booking-photo')">
+            <span class="nav-icon">🖼️</span>
+            <span class="nav-label">Booking Spotlight Photo</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="products" onclick="Admin.switchTab('products')">
+            <span class="nav-icon">🛍️</span>
+            <span class="nav-label">Store Artifacts</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="reviews" onclick="Admin.switchTab('reviews')">
+            <span class="nav-icon">⭐</span>
+            <span class="nav-label">Collector Reviews</span>
+          </button>
+
+          <button class="admin-nav-item" data-tab="settings" onclick="Admin.switchTab('settings')">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Studio Settings &amp; Keys</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom-action">
+          <a href="index.html" class="sidebar-back-link">
+            <span>← Back to Public Website</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Sidebar Overlay for Mobile -->
+      <div id="adminSidebarOverlay" class="admin-sidebar-overlay"></div>
+
+      <!-- Main Dynamic Content Canvas -->
+      <main class="admin-main-content" id="adminTabContent">
+        <div class="admin-loading-spinner">
+          <div class="spinner-circle"></div>
+          <p>Loading Studio Dashboard...</p>
+        </div>
+      </main>
+
+    </div>
+  </section>
+
+  <!-- Notification Toasts Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+
+  <!-- Standalone Clock & Mobile Handler Init -->
+  <script>
+    // Live Clock for Admin Dashboard
+    function updateAdminClock() {
+      const clockEl = document.getElementById('adminLiveClock');
+      if (!clockEl) return;
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      clockEl.textContent = now.toLocaleDateString('en-US', options);
+    }
+    setInterval(updateAdminClock, 1000);
+    updateAdminClock();
+
+    // Toggle Password Visibility
+    const togglePinBtn = document.getElementById('togglePinVisibilityBtn');
+    const pinInput = document.getElementById('adminPinInput');
+    if (togglePinBtn && pinInput) {
+      togglePinBtn.addEventListener('click', () => {
+        if (pinInput.type === 'password') {
+          pinInput.type = 'text';
+          togglePinBtn.textContent = '🙈';
+        } else {
+          pinInput.type = 'password';
+          togglePinBtn.textContent = '👁️';
+        }
+      });
+    }
+
+    // Mobile Sidebar Drawer Toggle
+    const mobileToggle = document.getElementById('adminMobileSidebarToggle');
+    const sidebar = document.getElementById('adminSidebarNav');
+    const overlay = document.getElementById('adminSidebarOverlay');
+
+    function toggleMobileSidebar() {
+      sidebar?.classList.toggle('mobile-open');
+      overlay?.classList.toggle('active');
+    }
+
+    mobileToggle?.addEventListener('click', toggleMobileSidebar);
+    overlay?.addEventListener('click', toggleMobileSidebar);
+
+    // Close mobile sidebar when clicking a tab
+    document.querySelectorAll('.admin-nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        sidebar?.classList.remove('mobile-open');
+        overlay?.classList.remove('active');
+      });
+    });
+
+    // Auto-init on page ready (runs immediately if document is already interactive or complete)
+    function bootAdminPortal() {
+      if (window.Admin && typeof window.Admin.init === 'function') {
+        window.Admin.init();
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootAdminPortal);
+    } else {
+      bootAdminPortal();
+    }
+  </script>
+</body>
+
+</html>

@@ -177,8 +177,42 @@ const API = {
       return { success: true, data: db.poems || [] };
     }
 
-    if (endpoint === '/api/reviews') {
-      return { success: true, data: db.reviews || [] };
+    if (endpoint === '/api/admin/stats') {
+      return {
+        success: true,
+        data: {
+          totalArtworks: (db.artworks || []).length,
+          availableArtworks: (db.artworks || []).filter(a => !a.isSold).length,
+          totalFaceArts: (db.faceArts || []).length,
+          publishedFaceArts: (db.faceArts || []).filter(f => f.isPublished !== false).length,
+          totalProducts: (db.products || []).length,
+          totalBookings: (db.bookings || []).length,
+          pendingBookings: (db.bookings || []).filter(b => b.status !== 'Confirmed').length,
+          totalOrders: (db.orders || []).length,
+          totalRevenue: (db.orders || []).reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+          totalReviews: (db.reviews || []).length,
+          avgRating: '5.0'
+        }
+      };
+    }
+
+    if (endpoint === '/api/face-painting-pricing') {
+      if (method === 'PUT') {
+        db.pricing = { ...db.pricing, ...JSON.parse(options.body || '{}') };
+        try { localStorage.setItem(key, JSON.stringify(db)); } catch (e) {}
+      }
+      return {
+        success: true,
+        data: db.pricing || { fest: 3500, editorial: 4000, private: 2500, bridal: 5000, extraGuest: 120 }
+      };
+    }
+
+    if (endpoint === '/api/bookings') {
+      return { success: true, data: db.bookings || [] };
+    }
+
+    if (endpoint === '/api/orders') {
+      return { success: true, data: db.orders || [] };
     }
 
     return { success: false, data: [], message: 'Offline request.' };

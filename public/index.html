@@ -22,7 +22,6 @@
   <!-- Core & Component Styles -->
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/admin.css" />
 
   <!-- Razorpay Official Checkout Gateway SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -61,11 +60,6 @@
           <span class="badge-count" id="cartCountBadge">0</span>
         </button>
 
-        <!-- Admin Portal Trigger -->
-        <button class="btn-icon" id="openAdminBtn" title="Admin Portal" aria-label="Admin Studio Portal">
-          🔑
-        </button>
-
         <!-- Mobile Nav Toggle -->
         <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle Menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -99,10 +93,6 @@
         onclick="document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open');">
         🛍️ Shop Art & Artifacts
       </a>
-      <button class="btn btn-secondary btn-sm"
-        onclick="Admin.open(); document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open');">
-        🔑 Admin Studio Portal
-      </button>
     </div>
   </div>
 
@@ -112,7 +102,7 @@
     <section class="section hero-unified-section" id="home">
       <div class="container">
         <div class="hero-unified-grid">
-          <!-- Left Column: Polaroid Artist Photo (Uploadable via Admin) -->
+          <!-- Left Column: Polaroid Artist Photo -->
           <div class="artist-polaroid-wrap">
             <div class="artist-polaroid-frame">
               <div class="washi-tape"></div>
@@ -124,7 +114,7 @@
               <div class="polaroid-caption">Akanksha</div>
 
 
-              <!-- Instagram Tags & Admin Upload Shortcut -->
+              <!-- Instagram Tags -->
               <div
                 style="margin-top: 1.15rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <a href="https://instagram.com/_akanxha" target="_blank" rel="noreferrer" class="hero-tag-pill"
@@ -277,7 +267,7 @@
           <!-- Left Sidebar: Main Place Card & Feature Highlights -->
           <div class="booking-sidebar">
             <div>
-              <!-- MAIN FACE ART PLACE CARD (Admin Editable via Admin Panel) -->
+              <!-- MAIN FACE ART PLACE CARD -->
               <div class="faceart-spotlight-card"
                 style="margin-bottom: 2rem; position: relative; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 12px 36px rgba(224, 49, 105, 0.14); border: 2px solid var(--border-pink); background: white;">
                 <div style="position: relative; height: 350px; width: 100%; overflow: hidden; background: #fff5f7;">
@@ -618,11 +608,6 @@
           <a href="#faceart-gallery" class="nav-link" style="font-size: 0.875rem;">Face Art Gallery</a>
           <a href="#store" class="nav-link" style="font-size: 0.875rem;">Artifacts</a>
           <a href="#contact" class="nav-link" style="font-size: 0.875rem;">Contact</a>
-          <button
-            style="background: none; border: none; font-size: 0.875rem; color: var(--color-pink-600); cursor: pointer; font-weight: 600;"
-            onclick="Admin.open()">
-            🔑 Admin Dashboard
-          </button>
         </div>
       </div>
       <div
@@ -751,7 +736,7 @@
       overflow: hidden;
       flex-shrink: 0;
     ">
-          <img id="adminUpiQr" src="" alt="Admin UPI QR Code" style="
+          <img id="studioUpiQr" src="" alt="Studio UPI QR Code" style="
         width: 100%;
         height: 100%;
         object-fit: contain;
@@ -760,7 +745,7 @@
 
         <!-- PAYMENT DETAILS -->
         <div>
-          <strong id="adminUpiId" style="
+          <strong id="studioUpiId" style="
         font-size: 0.85rem;
         display: block;
         color: var(--color-pink-600);
@@ -872,61 +857,6 @@
     <div id="orderSuccessModalContent"></div>
   </div>
 
-  <!-- 7. ADMIN DASHBOARD & CMS PORTAL -->
-  <div class="admin-modal-container" id="adminModal">
-    <div class="admin-header">
-      <div class="admin-title-wrap">
-        <span style="font-size: 1.4rem;">🌸</span>
-        <h3 class="admin-title">Studio Admin Dashboard</h3>
-        <span class="admin-badge">Admin Mode</span>
-      </div>
-      <button class="modal-close-btn" data-target-modal="adminModal"
-        style="position: static; font-size: 1.25rem;">✕</button>
-    </div>
-
-    <!-- Admin Login Screen -->
-    <div id="adminLoginView" class="admin-login-box">
-      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
-      <h3 style="font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 0.5rem;">Studio Login</h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter PIN to manage artworks, bookings, store items,
-        customer orders, and
-        site quote.</p>
-
-      <form id="adminLoginForm">
-        <input type="password" id="adminPinInput" class="form-input admin-pin-input" placeholder="••••" maxlength="50"
-          required />
-        <div id="adminLoginError" style="color: #E03131; font-size: 0.8rem; margin-bottom: 1rem;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-          Enter Studio Dashboard
-        </button>
-      </form>
-      <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-light);">
-        <strong></strong>
-      </div>
-    </div>
-
-    <!-- Admin Main Dashboard Screen (After login) -->
-    <div id="adminDashboardView" class="admin-body" style="display: none;">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <button class="admin-nav-item active" data-tab="overview">📊 Overview & Stats</button>
-        <button class="admin-nav-item" data-tab="orders">📦 Customer Orders</button>
-        <button class="admin-nav-item" data-tab="bookings">📅 Face Paint Bookings</button>
-        <button class="admin-nav-item" data-tab="artworks">🎨 Manage Artworks</button>
-        <button class="admin-nav-item" data-tab="facearts">✨ Face Art Gallery</button>
-        <button class="admin-nav-item" data-tab="placecard">🖼️ Face Art Place Card</button>
-        <button class="admin-nav-item" data-tab="products">🛍️ Store Artifacts</button>
-        <button class="admin-nav-item" data-tab="reviews">⭐ Collector Reviews</button>
-        <button class="admin-nav-item" data-tab="settings">⚙️ Edit Bio & Contacts</button>
-      </aside>
-
-      <!-- Content Area -->
-      <section class="admin-content" id="adminTabContent">
-        <!-- Dynamically filled by admin.js -->
-      </section>
-    </div>
-  </div>
-
   <!-- JAVASCRIPT BUNDLES -->
   <script src="js/api.js"></script>
   <script src="js/gallery.js"></script>
@@ -935,20 +865,19 @@
   <script src="js/store.js"></script>
   <script src="js/reviews.js"></script>
   <script src="js/contact.js"></script>
-  <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
 
   <!-- =========================================
-     DYNAMIC ADMIN UPI QR CODE
+     DYNAMIC STUDIO UPI QR CODE
      ========================================= -->
   <script>
-    async function loadAdminUPI() {
+    async function loadStudioUPI() {
       try {
         const response = await fetch('/api/settings');
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error('Could not load admin settings');
+          throw new Error('Could not load studio settings');
         }
 
         const settings = result.data || {};
@@ -964,8 +893,8 @@
         const qrUrl =
           `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
 
-        const qrImage = document.getElementById('adminUpiQr');
-        const upiText = document.getElementById('adminUpiId');
+        const qrImage = document.getElementById('studioUpiQr');
+        const upiText = document.getElementById('studioUpiId');
 
         if (qrImage) {
           qrImage.src = qrUrl;
@@ -976,11 +905,11 @@
         }
 
       } catch (error) {
-        console.error('❌ Could not load admin UPI:', error);
+        console.error('❌ Could not load studio UPI:', error);
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadAdminUPI);
+    document.addEventListener('DOMContentLoaded', loadStudioUPI);
   </script>
 </body>
 

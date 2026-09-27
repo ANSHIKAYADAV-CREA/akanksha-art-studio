@@ -33,7 +33,6 @@ const App = {
     }
     await Reviews.init();
     Contact.init();
-    Admin.init();
 
     console.log("✨ All modules loaded successfully!");
   },
@@ -132,7 +131,7 @@ const App = {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
           overlay.classList.remove('open');
-          document.querySelectorAll('.modal-container, .admin-modal-container').forEach(m => m.classList.remove('open'));
+          document.querySelectorAll('.modal-container').forEach(m => m.classList.remove('open'));
         }
       });
     });
@@ -143,7 +142,7 @@ const App = {
         if (targetModalId) {
           App.closeModal(targetModalId);
         } else {
-          document.querySelectorAll('.modal-overlay, .modal-container, .admin-modal-container').forEach(m => m.classList.remove('open'));
+          document.querySelectorAll('.modal-overlay, .modal-container').forEach(m => m.classList.remove('open'));
         }
       });
     });
@@ -151,7 +150,7 @@ const App = {
     // Escape key to close all modals & drawers
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay, .modal-container, .admin-modal-container, .cart-overlay, .cart-drawer, .nav-drawer').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.modal-overlay, .modal-container, .cart-overlay, .cart-drawer, .nav-drawer').forEach(el => el.classList.remove('open'));
       }
     });
   },

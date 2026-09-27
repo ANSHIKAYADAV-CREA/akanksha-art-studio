@@ -3,75 +3,232 @@
  * Complete Content Management System for Artworks, Products, Bookings, Poems, Reviews & Settings.
  */
 
+// Ensure App object with toast/modal fallbacks exists even in standalone admin page
+if (typeof window.App === 'undefined') {
+  window.App = {
+    showToast(message) {
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = `
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          pointer-events: none;
+        `;
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        background: rgba(35, 31, 32, 0.95);
+        color: white;
+        padding: 0.85rem 1.4rem;
+        border-radius: 9999px;
+        box-shadow: 0 16px 36px rgba(201, 24, 74, 0.16);
+        font-size: 0.9rem;
+        font-weight: 500;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 117, 151, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: auto;
+      `;
+      toast.innerHTML = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    },
+    openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.add('open');
+    },
+    closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.remove('open');
+    },
+    refreshSettings(s) {
+      console.log('Studio settings refreshed in admin:', s);
+    }
+  };
+}
+
 const Admin = {
   isLoggedIn: false,
   currentTab: 'overview',
 
   init() {
     this.bindEvents();
-  },
-  bindEvents() {
-    // Open admin portal trigger
-    const openAdminBtn = document.getElementById('openAdminBtn');
 
-    if (openAdminBtn) {
-      openAdminBtn.addEventListener('click', () => this.open());
+    // Check if user has an active session or remembered login
+    const isRemembered = localStorage.getItem('akamatoe_admin_auth') === 'true';
+    const isSessionActive = sessionStorage.getItem('akamatoe_admin_auth') === 'true';
+
+    if (isRemembered || isSessionActive) {
+      this.isLoggedIn = true;
+      this.showDashboard();
+    } else {
+      this.showLoginForm();
+    }
+  },
+
+  bindEvents() {
+    // Open admin portal trigger (used in public page)
+    const openAdminBtn = document.getElementById('openAdminBtn');
+    if (openAdminBtn && openAdminBtn.tagName === 'BUTTON') {
+      openAdminBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.open();
+      });
     }
 
     // Admin login form
     const loginForm = document.getElementById('adminLoginForm');
-
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => this.handleLogin(e));
     }
 
     // Admin tab buttons
     const navItems = document.querySelectorAll('.admin-nav-item');
-
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
-        navItems.forEach(n => n.classList.remove('active'));
-
-        e.currentTarget.classList.add('active');
-
-        this.switchTab(e.currentTarget.dataset.tab);
+        const btn = e.target.closest('.admin-nav-item') || e.currentTarget;
+        const tab = btn?.dataset?.tab;
+        if (tab) {
+          this.switchTab(tab);
+        }
       });
     });
   },
 
   open() {
+    // If not currently on admin.html, navigate directly to admin landing page
+    if (!window.location.pathname.endsWith('admin.html') && !window.location.pathname.endsWith('/admin')) {
+      window.location.href = 'admin.html';
+      return;
+    }
+
     if (this.isLoggedIn) {
       this.showDashboard();
     } else {
       this.showLoginForm();
     }
 
-    App.openModal('adminModal');
-  },
-
-  async handleLogin(e) {
-    e.preventDefault();
-    const pin = document.getElementById('adminPinInput').value;
-    const res = await API.loginAdmin(pin);
-    if (res.success) {
-      this.isLoggedIn = true;
-      App.showToast('🌸 Welcome back to your Studio Dashboard, Akanksha!');
-      this.showDashboard();
-    } else {
-      const errEl = document.getElementById('adminLoginError');
-      if (errEl) errEl.textContent = res.message || 'Incorrect PIN. Default is 1234.';
+    const modal = document.getElementById('adminModal');
+    if (modal && typeof App !== 'undefined' && App.openModal) {
+      App.openModal('adminModal');
     }
   },
 
+  async handleLogin(e) {
+    if (e) e.preventDefault();
+    const pinInput = document.getElementById('adminPinInput');
+    if (!pinInput) return;
+
+    const pin = pinInput.value.trim();
+    const rememberCheckbox = document.getElementById('adminRememberMe');
+    const submitBtn = document.getElementById('adminLoginSubmitBtn');
+    const errEl = document.getElementById('adminLoginError');
+
+    if (errEl) {
+      errEl.textContent = '';
+      errEl.classList.remove('shake');
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⏳ Verifying Studio Access...</span>';
+    }
+
+    try {
+      const res = await API.loginAdmin(pin);
+      if (res && res.success) {
+        this.isLoggedIn = true;
+        sessionStorage.setItem('akamatoe_admin_auth', 'true');
+        if (rememberCheckbox && rememberCheckbox.checked) {
+          localStorage.setItem('akamatoe_admin_auth', 'true');
+        } else {
+          localStorage.removeItem('akamatoe_admin_auth');
+        }
+
+        App.showToast('🌸 Welcome back to your Studio Dashboard, Akanksha!');
+        this.showDashboard();
+      } else {
+        if (errEl) {
+          errEl.textContent = (res && res.message) ? res.message : 'Incorrect Studio PIN. Please check your credentials.';
+          errEl.classList.add('shake');
+          setTimeout(() => errEl.classList.remove('shake'), 500);
+        }
+      }
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent = '❌ Service connection issue: ' + err.message;
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Unlock Studio Dashboard</span><span class="arrow-icon">→</span>';
+      }
+    }
+  },
+
+  logout() {
+    this.isLoggedIn = false;
+    sessionStorage.removeItem('akamatoe_admin_auth');
+    localStorage.removeItem('akamatoe_admin_auth');
+    
+    // Clear input
+    const pinInput = document.getElementById('adminPinInput');
+    if (pinInput) pinInput.value = '';
+
+    App.showToast('👋 Studio session locked safely.');
+    this.showLoginForm();
+  },
+
   showLoginForm() {
-    document.getElementById('adminLoginView').style.display = 'block';
-    document.getElementById('adminDashboardView').style.display = 'none';
+    // 1. Standalone Admin Landing Page Views
+    const landingSection = document.getElementById('adminLandingSection');
+    const dashboardSection = document.getElementById('adminDashboardSection');
+    if (landingSection && dashboardSection) {
+      landingSection.style.display = 'block';
+      dashboardSection.style.display = 'none';
+    }
+
+    // 2. Fallback modal views
+    const loginView = document.getElementById('adminLoginView');
+    const dashboardView = document.getElementById('adminDashboardView');
+    if (loginView) loginView.style.display = 'block';
+    if (dashboardView) dashboardView.style.display = 'none';
   },
 
   async showDashboard() {
-    document.getElementById('adminLoginView').style.display = 'none';
-    document.getElementById('adminDashboardView').style.display = 'flex';
-    await this.switchTab('overview');
+    // 1. Standalone Admin Landing Page Views
+    const landingSection = document.getElementById('adminLandingSection');
+    const dashboardSection = document.getElementById('adminDashboardSection');
+    if (landingSection && dashboardSection) {
+      landingSection.style.display = 'none';
+      dashboardSection.style.display = 'flex';
+    }
+
+    // 2. Fallback modal views
+    const loginView = document.getElementById('adminLoginView');
+    const dashboardView = document.getElementById('adminDashboardView');
+    if (loginView) loginView.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'flex';
+
+    await this.switchTab(this.currentTab || 'overview');
   },
 
   async switchTab(tabName) {
@@ -79,83 +236,190 @@ const Admin = {
     const contentArea = document.getElementById('adminTabContent');
     if (!contentArea) return;
 
-    contentArea.innerHTML = '<div style="text-align:center; padding: 2rem;"><p>Loading...</p></div>';
+    // Auto-close mobile drawer on tab selection
+    const sidebar = document.getElementById('adminSidebarNav');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('active');
 
-    switch (tabName) {
-      case 'overview':
-        await this.renderOverview(contentArea);
-        break;
-      case 'artworks':
-        await this.renderArtworks(contentArea);
-        break;
-      case 'facearts':
-        await this.renderFaceArts(contentArea);
-        break;
-      case 'products':
-        await this.renderProducts(contentArea);
-        break;
-      case 'bookings':
-        await this.renderBookings(contentArea);
-        break;
-      case 'booking-photo':
-        await this.renderBookingPhoto(contentArea);
-        break;
-      case 'reviews':
-        await this.renderReviews(contentArea);
-        break;
-      case 'orders':
-        await this.renderOrders(contentArea);
-        break;
-      case 'settings':
-        await this.renderSettings(contentArea);
-        break;
+    // Synchronize active class across all matching tab buttons
+    document.querySelectorAll('.admin-nav-item').forEach(item => {
+      if (item.dataset.tab === tabName) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+
+    contentArea.innerHTML = `
+      <div class="admin-loading-spinner" style="padding: 3rem 1rem;">
+        <div class="spinner-circle"></div>
+        <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">Loading ${tabName}...</p>
+      </div>
+    `;
+
+    try {
+      switch (tabName) {
+        case 'overview':
+          await this.renderOverview(contentArea);
+          break;
+        case 'artworks':
+          await this.renderArtworks(contentArea);
+          break;
+        case 'facearts':
+          await this.renderFaceArts(contentArea);
+          break;
+        case 'products':
+          await this.renderProducts(contentArea);
+          break;
+        case 'bookings':
+          await this.renderBookings(contentArea);
+          break;
+        case 'booking-photo':
+        case 'placecard':
+          await this.renderBookingPhoto(contentArea);
+          break;
+        case 'reviews':
+          await this.renderReviews(contentArea);
+          break;
+        case 'orders':
+          await this.renderOrders(contentArea);
+          break;
+        case 'settings':
+          await this.renderSettings(contentArea);
+          break;
+        default:
+          await this.renderOverview(contentArea);
+          break;
+      }
+    } catch (err) {
+      console.error(`[Admin] Failed to render tab "${tabName}":`, err);
+      contentArea.innerHTML = `
+        <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 3rem 2rem; text-align: center; max-width: 600px; margin: 2rem auto; box-shadow: var(--shadow-sm);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">⚠️</div>
+          <h3 style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--color-pink-600); margin-bottom: 0.5rem;">
+            Could Not Load Tab Content
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            ${err.message || 'The studio service encountered an issue loading this section.'}
+          </p>
+          <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="Admin.switchTab('${tabName}')">
+              🔄 Retry Tab
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('overview')">
+              📊 Back to Overview
+            </button>
+          </div>
+        </div>
+      `;
     }
   },
 
   // 1. Overview Tab
   async renderOverview(container) {
-    const statsRes = await API.getAdminStats();
-    const stats = statsRes.data || {};
+    const [statsRes, artworksRes, faceArtsRes] = await Promise.all([
+      API.getAdminStats().catch(() => ({ data: {} })),
+      API.getArtworks().catch(() => ({ data: [] })),
+      API.getAdminFaceArts().catch(() => ({ data: [] }))
+    ]);
+    const stats = (statsRes && statsRes.data) || {};
+    const artworks = (artworksRes && artworksRes.data) || [];
+    const faceArts = (faceArtsRes && faceArtsRes.data) || [];
 
     container.innerHTML = `
       <div>
-        <h3 style="font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 0.5rem;">
-          Studio Overview & Live Analytics
-        </h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.75rem;">
-          Here is your live studio activity, pending bookings, and artwork inquiries.
-        </p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+          <div>
+            <h3 style="font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 0.35rem;">
+              Studio Overview &amp; Live Gallery
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
+              Welcome, Akanksha. Overview of your live portfolio items, photos, and studio inquiries.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="Admin.openAddArtworkModal()">🎨 + Add Artwork</button>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.openAddFaceArt()">✨ + Upload Face Art</button>
+          </div>
+        </div>
 
         <div class="admin-stats-grid">
-          <div class="stat-box">
-            <div class="stat-box-num">${stats.totalArtworks || 0}</div>
-            <div class="stat-box-title">Artworks in Gallery</div>
-            <div style="font-size: 0.75rem; color: #155724; margin-top: 0.25rem;">${stats.availableArtworks || 0} available for sale</div>
+          <div class="stat-box" onclick="Admin.switchTab('artworks')" style="cursor: pointer;">
+            <div class="stat-box-num">${stats.totalArtworks || artworks.length || 0}</div>
+            <div class="stat-box-title">Canvas Artworks</div>
+            <div style="font-size: 0.75rem; color: #155724; margin-top: 0.25rem;">${stats.availableArtworks || artworks.length || 0} available &bull; Click to view</div>
           </div>
-          <div class="stat-box">
-            <div class="stat-box-num">${stats.pendingBookings || 0}</div>
-            <div class="stat-box-title">Pending Face Painting Bookings</div>
-            <div style="font-size: 0.75rem; color: var(--color-pink-600); margin-top: 0.25rem;">Needs confirmation</div>
+          <div class="stat-box" onclick="Admin.switchTab('facearts')" style="cursor: pointer;">
+            <div class="stat-box-num">${stats.totalFaceArts || faceArts.length || 0}</div>
+            <div class="stat-box-title">Face Art Photographs</div>
+            <div style="font-size: 0.75rem; color: var(--color-pink-600); margin-top: 0.25rem;">Cloudinary hosted &bull; Click to view</div>
           </div>
-          <div class="stat-box">
+          <div class="stat-box" onclick="Admin.switchTab('orders')" style="cursor: pointer;">
             <div class="stat-box-num">₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}</div>
             <div class="stat-box-title">Store Revenue</div>
-            <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.25rem;">${stats.totalOrders || 0} total orders placed</div>
+            <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.25rem;">${stats.totalOrders || 0} total orders</div>
           </div>
-          <div class="stat-box">
-            <div class="stat-box-num">★ ${stats.avgRating || '5.0'}</div>
-            <div class="stat-box-title">Collector Rating</div>
-            <div style="font-size: 0.75rem; color: #FFB703; margin-top: 0.25rem;">${stats.totalReviews || 0} reviews posted</div>
+          <div class="stat-box" onclick="Admin.switchTab('bookings')" style="cursor: pointer;">
+            <div class="stat-box-num">${stats.pendingBookings || 0}</div>
+            <div class="stat-box-title">Pending Bookings</div>
+            <div style="font-size: 0.75rem; color: #e65100; margin-top: 0.25rem;">${stats.totalBookings || 0} total requests</div>
+          </div>
+        </div>
+
+        <!-- Visual Image Gallery Showcase -->
+        <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.75rem; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin: 0; color: var(--text-main);">
+              🎨 Live Uploaded Artworks (${artworks.length})
+            </h4>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('artworks')">
+              Manage Artworks &rarr;
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem;">
+            ${artworks.map(art => `
+              <div onclick="Admin.switchTab('artworks')" style="cursor: pointer; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--color-pink-50); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="${art.image}" alt="${art.title}" style="width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;" onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=300&q=80'" />
+                <div style="padding: 0.5rem 0.6rem;">
+                  <div style="font-weight: 600; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${art.title}</div>
+                  <div style="font-size: 0.72rem; color: var(--color-pink-600); font-weight: 600;">₹${(art.price || 0).toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Visual Face Art Showcase -->
+        <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.75rem; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin: 0; color: var(--text-main);">
+              ✨ Live Face Art Photographs (${faceArts.length})
+            </h4>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('facearts')">
+              Manage Face Art Gallery &rarr;
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.75rem;">
+            ${faceArts.map(fa => `
+              <div onclick="Admin.switchTab('facearts')" style="cursor: pointer; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--color-pink-50); aspect-ratio: 1/1; position: relative;">
+                <img src="${fa.image}" alt="Face Art" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.src='https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=300&q=80'" />
+                <span style="position: absolute; bottom: 4px; right: 4px; font-size: 0.65rem; background: rgba(0,0,0,0.65); color: white; padding: 0.15rem 0.4rem; border-radius: 4px;">
+                  ${fa.isPublished !== false ? '✓ Live' : 'Hidden'}
+                </span>
+              </div>
+            `).join('')}
           </div>
         </div>
 
         <div style="background: white; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-pink);">
-          <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.75rem;">Quick Actions</h4>
+          <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.75rem;">Quick Management Actions</h4>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <button class="btn btn-primary btn-sm" onclick="Admin.openAddArtworkModal()">🎨 Add New Artwork</button>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.openAddFaceArt()">✨ Upload Face Art</button>
             <button class="btn btn-secondary btn-sm" onclick="Admin.openAddProductModal()">🛍️ Add Store Product</button>
-            <button class="btn btn-earth btn-sm" onclick="Admin.switchTab('bookings')">📅 View Face Paint Bookings</button>
-            <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('settings')">⚙️ Edit Bio Quote & Contacts</button>
+            <button class="btn btn-earth btn-sm" onclick="Admin.switchTab('booking-photo')">🖼️ Update Spotlight Photo</button>
+            <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('settings')">⚙️ Edit Bio Quote &amp; Contacts</button>
           </div>
         </div>
       </div>
@@ -168,10 +432,14 @@ const Admin = {
     const artworks = res.data || [];
 
     container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-          <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Manage Artworks & Showcase</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">Add new canvas paintings, update prices, or mark items as sold.</p>
+          <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.25rem;">
+            Manage Artworks &amp; Showcase (${artworks.length})
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+            Original paintings displayed on your public gallery. Click any thumbnail to view in full resolution.
+          </p>
         </div>
         <button class="btn btn-primary btn-sm" onclick="Admin.openAddArtworkModal()">+ Add New Artwork</button>
       </div>
@@ -181,7 +449,7 @@ const Admin = {
           <thead>
             <tr>
               <th>Image</th>
-              <th>Title & Medium</th>
+              <th>Title &amp; Medium</th>
               <th>Category</th>
               <th>Price</th>
               <th>Status</th>
@@ -189,15 +457,36 @@ const Admin = {
             </tr>
           </thead>
           <tbody>
-            ${artworks.map(art => `
+            ${artworks.length === 0 ? `
               <tr>
-                <td><img src="${art.image}" class="table-thumb" alt="${art.title}" /></td>
+                <td colspan="6" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+                  <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎨</div>
+                  <div style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                    No Artworks in Gallery Yet
+                  </div>
+                  <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">Upload your canvas paintings to showcase them on the public website.</p>
+                  <button class="btn btn-primary btn-sm" onclick="Admin.openAddArtworkModal()">+ Upload First Artwork</button>
+                </td>
+              </tr>
+            ` : artworks.map(art => `
+              <tr>
+                <td>
+                  <img 
+                    src="${art.image}" 
+                    class="table-thumb" 
+                    alt="${art.title}" 
+                    title="Click to view full image"
+                    style="cursor: pointer;"
+                    onclick="window.open('${art.image}', '_blank')"
+                    onerror="this.src='https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=300&q=80'" 
+                  />
+                </td>
                 <td>
                   <strong>${art.title}</strong><br/>
                   <span style="font-size: 0.75rem; color: var(--text-light);">${art.medium} (${art.dimensions})</span>
                 </td>
                 <td>${art.category}</td>
-                <td><strong>₹${art.price.toLocaleString('en-IN')}</strong></td>
+                <td><strong>₹${(art.price || 0).toLocaleString('en-IN')}</strong></td>
                 <td>
                   <span class="table-badge ${art.isSold ? 'badge-sold' : 'badge-available'}">
                     ${art.isSold ? 'Sold' : 'Available'}
@@ -227,10 +516,14 @@ const Admin = {
     const products = res.data || [];
 
     container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-          <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Manage Mini Store & Artifacts</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">Totes, wearable art, custom painted jackets, prints and accessories.</p>
+          <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.25rem;">
+            Manage Mini Store &amp; Artifacts (${products.length})
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+            Pendants, wearable art, prints and studio merchandise.
+          </p>
         </div>
         <button class="btn btn-primary btn-sm" onclick="Admin.openAddProductModal()">+ Add Product</button>
       </div>
@@ -248,12 +541,33 @@ const Admin = {
             </tr>
           </thead>
           <tbody>
-            ${products.map(p => `
+            ${products.length === 0 ? `
               <tr>
-                <td><img src="${p.image}" class="table-thumb" alt="${p.title}" /></td>
+                <td colspan="6" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+                  <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🛍️</div>
+                  <div style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                    No Store Products Added Yet
+                  </div>
+                  <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">Add resin items, prints, or wearable art for collectors to buy.</p>
+                  <button class="btn btn-primary btn-sm" onclick="Admin.openAddProductModal()">+ Add First Product</button>
+                </td>
+              </tr>
+            ` : products.map(p => `
+              <tr>
+                <td>
+                  <img 
+                    src="${p.image}" 
+                    class="table-thumb" 
+                    alt="${p.title}" 
+                    title="Click to view full image"
+                    style="cursor: pointer;"
+                    onclick="window.open('${p.image}', '_blank')"
+                    onerror="this.src='https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=300&q=80'" 
+                  />
+                </td>
                 <td><strong>${p.title}</strong></td>
                 <td>${p.category}</td>
-                <td><strong>₹${p.price.toLocaleString('en-IN')}</strong></td>
+                <td><strong>₹${(p.price || 0).toLocaleString('en-IN')}</strong></td>
                 <td>${p.stock} units</td>
                 <td>
                   <div class="action-btn-group">
@@ -285,79 +599,62 @@ const Admin = {
     };
 
     container.innerHTML = `
-  <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-
-  <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem;">
-    🎨 Face Painting Pricing
-  </h3>
-
-  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-    Set the price customers will see for each face painting service.
-  </p>
-
-  <form onsubmit="Admin.saveFacePaintingPricing(event)">
-
-    <div class="form-grid">
-
-      <div class="form-group">
-        <label class="form-label">
-          College Fest / Cultural Event
-        </label>
-
-        <input
-          type="number"
-          name="fest"
-          class="form-input"
-          value="${pricing.fest || 0}"
-          min="0"
-          required
-        />
+      <!-- Helpful Navigation Banner for Face Painting Photos -->
+      <div style="background: linear-gradient(135deg, rgba(255, 230, 235, 0.8), rgba(255, 240, 243, 0.8)); border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: var(--color-pink-600); margin: 0 0 0.25rem;">
+            ✨ Looking for your Face Painting Photos &amp; Looks?
+          </h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+            Photos of your face painting looks are managed in <strong>Face Art Gallery</strong> and <strong>Booking Spotlight Photo</strong>.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-sm" onclick="Admin.switchTab('facearts')">
+            ✨ Open Face Art Gallery
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="Admin.switchTab('booking-photo')">
+            🖼️ Edit Spotlight Photo
+          </button>
+        </div>
       </div>
 
+      <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+        <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem;">
+          🎨 Face Painting Pricing
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Set the price customers will see for each face painting service.
+        </p>
 
-      <div class="form-group">
-        <label class="form-label">
-          Editorial / Fashion Photoshoot
-        </label>
-
-        <input
-          type="number"
-          name="editorial"
-          class="form-input"
-          value="${pricing.editorial || 0}"
-          min="0"
-          required
-        />
+        <form onsubmit="Admin.saveFacePaintingPricing(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">College Fest / Cultural Event (₹)</label>
+              <input type="number" name="fest" class="form-input" value="${pricing.fest || 0}" min="0" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Editorial / Fashion Photoshoot (₹)</label>
+              <input type="number" name="editorial" class="form-input" value="${pricing.editorial || 0}" min="0" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Private Gathering / Festival (₹)</label>
+              <input type="number" name="private" class="form-input" value="${pricing.private || 0}" min="0" required />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            💾 Save Face Painting Prices
+          </button>
+        </form>
       </div>
 
-
-      <div class="form-group">
-        <label class="form-label">
-          Private Gathering / Festival
-        </label>
-
-        <input
-          type="number"
-          name="private"
-          class="form-input"
-          value="${pricing.private || 0}"
-          min="0"
-          required
-        />
-      </div>
-
-    </div>
-
-    <button type="submit" class="btn btn-primary">
-      💾 Save Face Painting Prices
-    </button>
-
-  </form>
-
-</div>
       <div style="margin-bottom: 1.5rem;">
-        <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Face Painting & Creative Bookings</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">Manage requests for college fests, shoots, and private celebrations.</p>
+        <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.25rem;">
+          Face Painting Client Booking Requests (${bookings.length})
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+          Manage incoming requests for college fests, shoots, and private celebrations.
+        </p>
       </div>
 
       <div class="admin-table-wrap">
@@ -366,7 +663,7 @@ const Admin = {
             <tr>
               <th>Ref ID</th>
               <th>Client</th>
-              <th>Event & Date</th>
+              <th>Event &amp; Date</th>
               <th>Slot</th>
               <th>Location</th>
               <th>Fee</th>
@@ -375,7 +672,23 @@ const Admin = {
             </tr>
           </thead>
           <tbody>
-            ${bookings.map(b => `
+            ${bookings.length === 0 ? `
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+                  <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📅</div>
+                  <div style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                    No Face Painting Booking Inquiries Yet
+                  </div>
+                  <p style="font-size: 0.85rem; max-width: 480px; margin: 0 auto 1.25rem; color: var(--text-muted);">
+                    When college fests, corporate events, or private shoots book face painting sessions on your website, their requests and contact info will appear here.
+                  </p>
+                  <a href="index.html#booking" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>👁️ Test Public Booking Form</span>
+                    <span>↗</span>
+                  </a>
+                </td>
+              </tr>
+            ` : bookings.map(b => `
               <tr>
                 <td><strong style="color: var(--color-pink-600);">${b.id}</strong></td>
                 <td>
@@ -659,7 +972,19 @@ const Admin = {
             </tr>
           </thead>
           <tbody>
-            ${orders.map(o => `
+            ${orders.length === 0 ? `
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+                  <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📦</div>
+                  <div style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                    No Customer Orders Yet
+                  </div>
+                  <p style="font-size: 0.85rem; max-width: 450px; margin: 0 auto; color: var(--text-muted);">
+                    When customers buy original paintings or store artifacts through Razorpay, UPI, or Cash on Delivery, their full delivery addresses and items will appear here.
+                  </p>
+                </td>
+              </tr>
+            ` : orders.map(o => `
               <tr>
                 <td><strong style="color: var(--color-pink-600);">${o.id}</strong></td>
                 <td>
@@ -668,7 +993,7 @@ const Admin = {
                 </td>
                 <td>
                   <ul style="padding-left: 1rem; font-size: 0.8rem;">
-                    ${(o.items || []).map(i => `<li>${i.title} (×${i.quantity})</li>`).join('')}
+                    ${(o.items || []).map(i => `<li>${i.title} (&times;${i.quantity})</li>`).join('')}
                   </ul>
                 </td>
                 <td><strong>₹${(o.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
@@ -1209,7 +1534,9 @@ const Admin = {
           '✨ Artwork uploaded & published successfully!'
         );
 
-        await Gallery.fetchArtworks();
+        if (typeof Gallery !== 'undefined' && Gallery.fetchArtworks) {
+          await Gallery.fetchArtworks();
+        }
 
         this.switchTab('artworks');
 
@@ -1383,7 +1710,9 @@ const Admin = {
           '✨ Product uploaded & published successfully!'
         );
 
-        await Store.fetchProducts();
+        if (typeof Store !== 'undefined' && Store.fetchProducts) {
+          await Store.fetchProducts();
+        }
 
         this.switchTab('products');
 
@@ -1527,12 +1856,16 @@ const Admin = {
                       <img
                         src="${safeImg}"
                         alt="Face Art"
+                        title="Click to view photo in full resolution"
                         style="
                           width: 100%;
                           height: 100%;
                           object-fit: cover;
                           display: block;
+                          cursor: pointer;
                         "
+                        onclick="window.open('${safeImg}', '_blank')"
+                        onerror="this.src='https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?auto=format&fit=crop&w=600&q=80'"
                         loading="lazy"
                       />
                       <span style="
@@ -1752,7 +2085,9 @@ const Admin = {
       if (!res.success) throw new Error(res.message || 'Update failed');
       App.showToast(isSold ? '🏷️ Marked as Sold' : '✨ Marked as Available');
       await this.renderArtworks(document.getElementById('adminTabContent'));
-      await Gallery.fetchArtworks();
+      if (typeof Gallery !== 'undefined' && Gallery.fetchArtworks) {
+        await Gallery.fetchArtworks();
+      }
     } catch (err) {
       console.error('Toggle sold error:', err);
       App.showToast('❌ Update failed: ' + err.message);
@@ -1767,7 +2102,9 @@ const Admin = {
       if (!res.success) throw new Error(res.message || 'Delete failed');
       App.showToast('🗑️ Artwork deleted');
       await this.renderArtworks(document.getElementById('adminTabContent'));
-      await Gallery.fetchArtworks();
+      if (typeof Gallery !== 'undefined' && Gallery.fetchArtworks) {
+        await Gallery.fetchArtworks();
+      }
     } catch (err) {
       console.error('Delete artwork error:', err);
       App.showToast('❌ Could not delete: ' + err.message);
@@ -1782,7 +2119,9 @@ const Admin = {
       if (!res.success) throw new Error(res.message || 'Delete failed');
       App.showToast('🗑️ Product deleted');
       await this.renderProducts(document.getElementById('adminTabContent'));
-      await Store.fetchProducts();
+      if (typeof Store !== 'undefined' && Store.fetchProducts) {
+        await Store.fetchProducts();
+      }
     } catch (err) {
       console.error('Delete product error:', err);
       App.showToast('❌ Could not delete: ' + err.message);
@@ -1824,7 +2163,9 @@ const Admin = {
       if (!res.success) throw new Error(res.message || 'Delete failed');
       App.showToast('🗑️ Poem deleted');
       await this.renderPoems(document.getElementById('adminTabContent'));
-      await Poetry.fetchPoems();
+      if (typeof Poetry !== 'undefined' && Poetry.fetchPoems) {
+        await Poetry.fetchPoems();
+      }
     } catch (err) {
       console.error('Delete poem error:', err);
       App.showToast('❌ Could not delete poem: ' + err.message);
@@ -1875,3 +2216,20 @@ const Admin = {
     }
   }
 };
+
+// Expose Admin globally
+window.Admin = Admin;
+
+// Auto-boot if standalone admin page
+if (typeof window !== 'undefined' && (window.location.pathname.endsWith('admin.html') || window.location.pathname.endsWith('/admin'))) {
+  function autoBootAdmin() {
+    if (window.Admin && typeof window.Admin.init === 'function') {
+      window.Admin.init();
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoBootAdmin);
+  } else {
+    autoBootAdmin();
+  }
+}
