@@ -236,6 +236,190 @@
   ],
   "orders": [
     {
+      "id": "ORD-7711",
+      "customerName": "Shahendra Kumar Yadav",
+      "email": "shahendrayadav20780@gmail.com",
+      "phone": "9517155681",
+      "address": "New Police Laine\nP3/2",
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 1,
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "paymentStatus": "Paid",
+      "status": "Processing",
+      "notes": "",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "465097829901",
+        "verifiedAt": "2026-09-30T16:59:26.860Z"
+      },
+      "createdAt": "2026-09-30T16:59:26.867Z"
+    },
+    {
+      "address": "New Police Laine\nP3/2",
+      "notes": "",
+      "customerName": "Shahendra Kumar Yadav",
+      "createdAt": "2026-09-30T15:50:23.793Z",
+      "totalAmount": 15000,
+      "phone": "9517155681",
+      "paymentMethod": "UPI QR (Instant)",
+      "id": "ORD-1448",
+      "paymentDetails": {
+        "utr": "420394098773",
+        "method": "UPI",
+        "verifiedAt": "2026-09-30T15:50:23.682Z"
+      },
+      "items": [
+        {
+          "id": "art-mtlggnzj-pxtb",
+          "title": "Radhika by Mar Chughtai",
+          "price": 15000,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788435737/akanksha-art-studio/kl84hz7l3ud2bczhmulw.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "shahendrayadav20780@gmail.com",
+      "status": "Processing",
+      "paymentStatus": "Paid"
+    },
+    {
+      "address": "New Police Laine\nP/2",
+      "notes": "",
+      "customerName": "Shahendra Kumar Yadav",
+      "createdAt": "2026-09-30T15:21:18.462Z",
+      "totalAmount": 3499,
+      "phone": "9517155681",
+      "paymentMethod": "UPI (Google Pay / PhonePe / Paytm)",
+      "id": "ORD-1480",
+      "paymentDetails": {},
+      "items": [
+        {
+          "id": "prod-2",
+          "title": "Custom Painted Vintage Denim Jacket",
+          "price": 3499,
+          "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80",
+          "category": "Fashion Artifacts",
+          "quantity": 1
+        }
+      ],
+      "email": "shahendrayadav20780@gmail.com",
+      "paymentStatus": "Not Yet",
+      "status": "Processing"
+    },
+    {
+      "address": "New Police Laine\nP3/2",
+      "notes": "",
+      "customerName": "Shahendra Kumar Yadav",
+      "createdAt": "2026-09-30T16:39:58.592Z",
+      "totalAmount": 1,
+      "phone": "9517155681",
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "id": "ORD-1725",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "495934885047",
+        "verifiedAt": "2026-09-30T16:39:58.555Z"
+      },
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "shahendrayadav20780@gmail.com",
+      "paymentStatus": "Paid",
+      "status": "Processing"
+    },
+    {
+      "address": "Akis heart",
+      "notes": "",
+      "customerName": "Echhit ",
+      "createdAt": "2026-09-29T19:55:15.291Z",
+      "totalAmount": 1,
+      "phone": "7985882710",
+      "paymentMethod": "UPI (Google Pay / PhonePe / Paytm)",
+      "id": "ORD-5028",
+      "paymentDetails": {},
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "bunnywillsnipe@gmail.com",
+      "paymentStatus": "Not Yet",
+      "status": "Processing"
+    },
+    {
+      "address": "Pg",
+      "notes": "",
+      "customerName": "Akanksha",
+      "createdAt": "2026-09-28T20:03:56.955Z",
+      "totalAmount": 1,
+      "phone": "95171 55681",
+      "paymentMethod": "UPI (Google Pay / PhonePe / Paytm)",
+      "id": "ORD-6638",
+      "paymentDetails": {},
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "akanshalps0@gmail.com",
+      "paymentStatus": "Not Yet",
+      "status": "Processing"
+    },
+    {
+      "address": "New Police Laine\nP3/2",
+      "notes": "",
+      "customerName": "Shahendra Kumar Yadav",
+      "createdAt": "2026-09-30T16:40:56.235Z",
+      "totalAmount": 1,
+      "phone": "9517155681",
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "id": "ORD-9178",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "495427389664",
+        "verifiedAt": "2026-09-30T16:40:56.169Z"
+      },
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "shahendrayadav20780@gmail.com",
+      "paymentStatus": "Paid",
+      "status": "Processing"
+    },
+    {
       "createdAt": "2026-09-04T07:19:19.997Z",
       "totalAmount": 15000,
       "address": "police line",

@@ -671,102 +671,235 @@
     </div>
   </div>
 
-  <!-- 2. CHECKOUT MODAL -->
+  <!-- 2. CHECKOUT MODAL (2-STEP FLOW) -->
   <div class="modal-container" id="checkoutModal">
     <button class="modal-close-btn" data-target-modal="checkoutModal">✕</button>
-    <h2 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.5rem;">Secure Checkout</h2>
-    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">Direct dispatch from Akanksha's
-      studio with handwritten artist note.</p>
 
-    <div id="checkoutOrderSummary"></div>
-
-    <form id="checkoutForm">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" name="customerName" class="form-input" placeholder="Recipient's Name" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Phone Number (For Courier Tracking & Updates)</label>
-          <input type="tel" name="phone" class="form-input" placeholder="e.g. 9810123456" required />
-        </div>
-        <div class="form-group full-width">
-          <label class="form-label">Email Address (For Invoice & Dispatch Receipt)</label>
-          <input type="email" name="email" class="form-input" placeholder="email@domain.com" required />
-        </div>
-        <div class="form-group full-width">
-          <label class="form-label">Complete Shipping / Delivery Address with PIN Code</label>
-          <textarea name="address" class="form-textarea" rows="3"
-            placeholder="House/Flat No, Apartment/Society, Street, Landmark, City, State - PIN Code"
-            required></textarea>
-        </div>
-        <div class="form-group full-width">
-          <label class="form-label">Payment Method</label>
-          <select name="paymentMethod" class="form-select" id="checkoutPaymentMethodSelect" required>
-            <option value="Cash on Delivery">Cash on Delivery (Pay in Cash upon Arrival)</option>
-            <option value="UPI (Google Pay / PhonePe / Paytm)">UPI QR / Google Pay / PhonePe / Paytm (Instant)</option>
-            <option value="Credit / Debit Card">Credit / Debit Card</option>
-            <option value="Net Banking">Net Banking</option>
-          </select>
-        </div>
+    <!-- STEP 1: CUSTOMER & DELIVERY DETAILS -->
+    <div id="checkoutStep1">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+        <h2 style="font-family: var(--font-serif); font-size: 2rem; margin: 0;">Secure Checkout</h2>
+        <span style="font-size: 0.75rem; font-weight: 700; background: var(--color-pink-100); color: var(--color-pink-700); padding: 0.25rem 0.65rem; border-radius: 999px;">
+          Step 1 of 2
+        </span>
       </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Direct dispatch from Akanksha's studio with handwritten artist note.
+      </p>
 
-      <!-- UPI QR Simulation Box -->
-      <!-- UPI PAYMENT QR -->
-      <div id="checkoutUpiBox" style="
-    background: var(--color-pink-50);
-    border: 1px dashed var(--color-pink-400);
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  ">
-        <!-- QR CODE -->
-        <div style="
-      width: 110px;
-      height: 110px;
-      background: white;
-      border: 1px solid var(--border-pink);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
-    ">
-          <img id="studioUpiQr" src="" alt="Studio UPI QR Code" style="
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      " />
+      <div id="checkoutOrderSummary"></div>
+
+      <form id="checkoutForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="customerName" class="form-input" placeholder="Recipient's Name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number (For Courier Tracking & Updates)</label>
+            <input type="tel" name="phone" class="form-input" placeholder="e.g. 9810123456" required />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Email Address (For Invoice & Dispatch Receipt)</label>
+            <input type="email" name="email" class="form-input" placeholder="email@domain.com" required />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Complete Shipping / Delivery Address with PIN Code</label>
+            <textarea name="address" class="form-textarea" rows="3"
+              placeholder="House/Flat No, Apartment/Society, Street, Landmark, City, State - PIN Code"
+              required></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Payment Method</label>
+            <select name="paymentMethod" class="form-select" id="checkoutPaymentMethodSelect" required>
+              <option value="" disabled selected>-- Select Payment Method --</option>
+              <option value="UPI (Google Pay / PhonePe / Paytm)">UPI QR / Google Pay / PhonePe / Paytm (Instant QR)</option>
+              <option value="Cash on Delivery">Cash on Delivery (Pay in Cash upon Arrival)</option>
+              <option value="Credit / Debit Card">Credit / Debit Card (Online Gateway)</option>
+              <option value="Net Banking">Net Banking (Online Gateway)</option>
+            </select>
+          </div>
         </div>
 
-        <!-- PAYMENT DETAILS -->
-        <div>
-          <strong id="studioUpiId" style="
-        font-size: 0.85rem;
-        display: block;
-        color: var(--color-pink-600);
-      ">
-            UPI ID: Loading...
-          </strong>
+        <!-- PAYMENT METHOD INFO BANNER (Explains next step based on selection) -->
+        <div id="checkoutPaymentDetailsWrapper" style="display: none; margin-bottom: 1.25rem;">
+          <!-- UPI Note -->
+          <div id="checkoutUpiNotice" style="
+            display: none;
+            background: var(--color-pink-50);
+            border: 1px dashed var(--color-pink-400);
+            padding: 0.9rem 1.15rem;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            color: var(--color-pink-700);
+          ">
+            📱 <strong>UPI QR Payment:</strong> Once you click below, the dynamic studio QR code will appear with automated verification to confirm your payment!
+          </div>
 
-          <span style="
-        font-size: 0.75rem;
-        color: var(--text-muted);
-      ">
-            Scan the QR code using Google Pay, PhonePe,
-            Paytm or any UPI app.
-          </span>
+          <!-- COD Note -->
+          <div id="checkoutCodBox" style="
+            display: none;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #10b981;
+            padding: 0.9rem 1.15rem;
+            border-radius: var(--radius-md);
+          ">
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+              <span>💵</span> Cash on Delivery Selected
+            </div>
+            <p id="checkoutCodText" style="font-size: 0.82rem; color: #475569; margin: 0; line-height: 1.4;">
+              No advance payment needed! You can pay cash or UPI to the courier partner upon parcel delivery.
+            </p>
+          </div>
+
+          <!-- Card / NetBanking Note -->
+          <div id="checkoutCardBox" style="
+            display: none;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #3b82f6;
+            padding: 0.9rem 1.15rem;
+            border-radius: var(--radius-md);
+          ">
+            <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+              <span>🔒</span> Secure Gateway Payment
+            </div>
+            <p id="checkoutCardText" style="font-size: 0.82rem; color: #1e40af; margin: 0; line-height: 1.4;">
+              Encrypted Razorpay card & net banking checkout will launch securely when you proceed.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <button type="submit" class="btn btn-primary" style="width: 100%;">
-        🌸 Place Order
+        <button type="submit" id="checkoutSubmitBtn" class="btn btn-primary" style="width: 100%;">
+          🌸 Continue to Payment →
+        </button>
+      </form>
+    </div>
+
+    <!-- STEP 2: BLINKIT-STYLE LINK PAYMENT & UPI QR WITH IN-PLACE BLUE TICK -->
+    <div id="checkoutStep2" style="display: none;">
+      <button type="button" class="btn btn-secondary btn-sm" id="checkoutBackToStep1Btn" style="margin-bottom: 0.75rem; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+        ← Back to Delivery Details
       </button>
-    </form>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+        <h2 style="font-family: var(--font-serif); font-size: 1.85rem; margin: 0;">Instant UPI Payment</h2>
+        <span style="font-size: 0.75rem; font-weight: 700; background: #dbeafe; color: #1d4ed8; padding: 0.25rem 0.65rem; border-radius: 999px;">
+          Step 2 of 2 • Automated
+        </span>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Pay directly via your preferred UPI app link or scan the QR code.
+      </p>
+
+      <!-- Recipient & Order info pill -->
+      <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span>📍 <strong>Delivering to:</strong> <span id="checkoutStep2Recipient">...</span></span>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Amount to Pay:</span>
+          <strong style="color: #0c831f; font-size: 1.2rem; margin-left: 0.25rem;" id="checkoutStep2Amount">₹0</strong>
+        </div>
+      </div>
+
+      <!-- MAIN PAYMENT PRESENTATION WITH IN-PLACE QR TO BLUE TICK MORPHING -->
+      <div id="checkoutStep2QrContainer" style="background: var(--color-pink-50); border: 1.5px dashed var(--color-pink-400); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; text-align: center; transition: all 0.4s ease;">
+        
+        <!-- The center box where QR code displays and morphs into a Blue Tick upon payment -->
+        <div id="checkoutCenterMorphBox" style="width: 185px; height: 185px; margin: 0 auto 0.85rem; background: white; padding: 10px; border-radius: 16px; border: 1.5px solid var(--border-pink); box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.4s ease;">
+          
+          <!-- State 1: Active QR Code -->
+          <img id="checkoutStep2Qr" src="" alt="UPI Payment QR Code" style="width: 100%; height: 100%; object-fit: contain; transition: opacity 0.3s ease;" />
+          
+          <!-- State 2: Verified Blue Tick (Replaces QR code in exact same place!) -->
+          <div id="checkoutBlueTickBox" style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center;">
+            <div class="blue-tick-circle">
+              ✓
+            </div>
+            <div style="margin-top: 0.65rem; font-size: 0.82rem; font-weight: 800; color: #1d4ed8; letter-spacing: 0.5px;">
+              PAID &amp; VERIFIED
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Meta / UPI ID (Hidden when paid) -->
+        <div id="checkoutUpiIdRow" style="margin-bottom: 0.65rem;">
+          <span style="display: inline-block; background: white; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--border-pink); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--color-pink-600);">
+            <span id="checkoutStep2UpiId">akanksha.lko30@oksbi</span>
+          </span>
+          <button type="button" id="copyStep2UpiBtn" style="background: white; border: 1px solid var(--border-pink); color: var(--color-pink-600); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 999px; cursor: pointer; margin-left: 0.4rem;">
+            📋 Copy UPI
+          </button>
+        </div>
+
+        <p id="checkoutQrSubText" style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+          Scan with any UPI app or tap the instant Blinkit-style pay links below.
+        </p>
+
+        <!-- Dynamic Success message in place of subtitle when blue tick is active -->
+        <div id="checkoutBlueTickSuccessNotice" style="display: none; color: #15803d; font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem;">
+          🎉 Payment confirmed! Transferring to order confirmation...
+        </div>
+      </div>
+
+      <!-- BLINKIT STYLE DIRECT LINK PAYMENT ACTIONS (NO MANUAL UTR REQUIRED!) -->
+      <div id="checkoutLinkPaymentBox" style="background: white; border: 1px solid var(--border-pink); padding: 1.25rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 1rem;">
+        
+        <!-- Automated Radar Status -->
+        <div id="checkoutLiveStatusBadge" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 0.6rem 0.85rem; border-radius: var(--radius-md); font-weight: 600; font-size: 0.82rem; margin-bottom: 1rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          <span class="status-pulse-dot" style="width: 8px; height: 8px; background: #16a34a; border-radius: 50%; display: inline-block; animation: blinkPulse 1.2s infinite;"></span>
+          <span id="checkoutLiveStatusText">📡 Automated Gateway: Awaiting payment confirmation...</span>
+        </div>
+
+        <!-- 1. Blinkit Big Intent Payment Button -->
+        <a id="blinkitDirectPayBtn" href="#" class="blinkit-upi-btn" target="_blank">
+          <span style="font-size: 1.2rem;">⚡</span>
+          <span>Pay <span id="blinkitPayBtnAmount">₹0</span> via UPI App</span>
+          <span style="font-size: 0.8rem; opacity: 0.9; margin-left: auto;">Tap to Pay →</span>
+        </a>
+
+        <!-- 2. Individual UPI Apps Grid (Blinkit style app selector) -->
+        <div style="margin-top: 0.85rem;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            Or choose your payment app:
+          </div>
+          <div class="upi-app-grid">
+            <a id="payViaGpay" href="#" class="upi-app-chip" target="_blank">
+              <span class="upi-app-chip-icon">🟢</span>
+              <span>Google Pay</span>
+            </a>
+            <a id="payViaPhonepe" href="#" class="upi-app-chip" target="_blank">
+              <span class="upi-app-chip-icon">🟣</span>
+              <span>PhonePe</span>
+            </a>
+            <a id="payViaPaytm" href="#" class="upi-app-chip" target="_blank">
+              <span class="upi-app-chip-icon">🔵</span>
+              <span>Paytm</span>
+            </a>
+            <a id="payViaBhim" href="#" class="upi-app-chip" target="_blank">
+              <span class="upi-app-chip-icon">🟠</span>
+              <span>BHIM / CRED</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 3. Automated Instant Verification Trigger -->
+        <div style="margin-top: 1rem;">
+          <button type="button" id="autoCheckPaymentBtn" class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, var(--color-pink-500) 0%, var(--color-pink-600) 100%);">
+            ✓ I Have Paid on UPI (Instant Auto-Verify)
+          </button>
+        </div>
+
+        <div style="text-align: center; margin-top: 0.85rem;">
+          <button type="button" id="reportPaymentIssueBtn" style="background: none; border: none; color: #dc2626; font-size: 0.78rem; text-decoration: underline; cursor: pointer; padding: 0.25rem;">
+            Amount deducted but facing delay? Click here to report
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <!-- 3. ARTWORK DETAIL LIGHTBOX MODAL -->
