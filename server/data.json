@@ -18,7 +18,10 @@
     "title": "unwearied creation",
     "bookingFeatureImage": "https://res.cloudinary.com/wempi94r/image/upload/v1788446134/akanksha-art-studio/e9mi7t9zajv9kc9dbapb.jpg",
     "bookingFeatureTitle": "Ethereal Fest & Editorial Look",
-    "bookingFeatureSubtitle": "Hand-painted bespoke motifs created by Akanksha for university fests and cultural gatherings."
+    "bookingFeatureSubtitle": "Hand-painted bespoke motifs created by Akanksha for university fests and cultural gatherings.",
+    "upiLink": "upi://pay?pa=akanksha.lko30@oksbi&pn=AKAMATOE%20Studio&cu=INR",
+    "qrUrl": "",
+    "updatedAt": "2026-10-18T12:33:46.423Z"
   },
   "artworks": [
     {
@@ -261,6 +264,42 @@
     }
   ],
   "orders": [
+    {
+      "address": "p3/2 new police linjnfwefbhgshjfgjsd",
+      "notes": "Customer transferred via Direct UPI QR / app link. Requires manual bank credit verification before dispatch.",
+      "paymentVerifiedAt": null,
+      "settlementProcessedAt": null,
+      "settlementId": null,
+      "customerName": "Anshika yadav",
+      "createdAt": "2026-10-18T12:06:25.726Z",
+      "totalAmount": 1,
+      "phone": "9569907334",
+      "settlementStatus": "Pending",
+      "paymentId": null,
+      "settlementReference": null,
+      "paymentMethod": "Direct UPI Transfer (Pending Studio Bank Check)",
+      "id": "ORD-1127",
+      "paymentDetails": {
+        "method": "Direct UPI App / QR",
+        "submittedAt": "2026-10-18T12:06:25.148Z"
+      },
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "anshikabitee4372@gmail.com",
+      "paymentStatus": "Pending",
+      "razorpayOrderId": null,
+      "bankCreditConfirmedAt": null,
+      "status": "Awaiting Verification",
+      "updatedAt": "2026-10-18T12:06:25.726Z"
+    },
     {
       "address": "New Police Laine\nP3/2",
       "notes": "",

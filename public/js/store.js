@@ -387,77 +387,33 @@ const Store = {
   showStep2(details) {
     const s1 = document.getElementById('checkoutStep1');
     const s2 = document.getElementById('checkoutStep2');
-    const centerBox = document.getElementById('checkoutCenterMorphBox');
     const qrImg = document.getElementById('checkoutStep2Qr');
-    const blueTick = document.getElementById('checkoutBlueTickBox');
-    const upiIdRow = document.getElementById('checkoutUpiIdRow');
-    const qrSubText = document.getElementById('checkoutQrSubText');
-    const successNotice = document.getElementById('checkoutBlueTickSuccessNotice');
-    const statusText = document.getElementById('checkoutLiveStatusText');
-    const statusBadge = document.getElementById('checkoutLiveStatusBadge');
-    const qrContainer = document.getElementById('checkoutStep2QrContainer');
 
     if (s1) s1.style.display = 'none';
     if (s2) s2.style.display = 'block';
 
-    // Reset center box and styles to active QR scan mode
     if (qrImg) qrImg.style.display = 'block';
-    if (blueTick) blueTick.style.display = 'none';
-    if (centerBox) {
-      centerBox.style.borderColor = 'var(--border-pink)';
-      centerBox.style.background = 'white';
-      centerBox.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
-    }
-    if (qrContainer) {
-      qrContainer.style.borderColor = 'var(--color-pink-400)';
-      qrContainer.style.background = 'var(--color-pink-50)';
-    }
-    if (upiIdRow) upiIdRow.style.display = 'block';
-    if (qrSubText) qrSubText.style.display = 'block';
-    if (successNotice) successNotice.style.display = 'none';
-    if (statusBadge) {
-      statusBadge.style.background = '#f0fdf4';
-      statusBadge.style.color = '#15803d';
-      statusBadge.style.borderColor = '#bbf7d0';
-    }
-    if (statusText) statusText.textContent = '📡 Automated Gateway: Awaiting payment confirmation...';
 
     const total = this.getTotal();
     const upiId = (App.settings && App.settings.upiId) || 'akanksha.lko30@oksbi';
     const upiName = (App.settings && App.settings.name) || 'AKAMATOE Studio';
     
-    // Blinkit-style deep link URL
-    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${total}&cu=INR&tn=Art%20Studio%20Order`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiUrl)}`;
+    // Deep link URL for generating QR code or direct payment
+    const upiUrl = (App.settings && App.settings.upiLink && App.settings.upiLink.trim())
+      ? (App.settings.upiLink.includes('?') ? `${App.settings.upiLink}&am=${total}` : App.settings.upiLink)
+      : `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${total}&cu=INR&tn=Art%20Studio%20Order`;
+
+    // If admin set or uploaded a custom QR Code image/url, use that; otherwise generate QR code dynamically
+    const qrUrl = (App.settings && App.settings.qrUrl && App.settings.qrUrl.trim())
+      ? App.settings.qrUrl.trim()
+      : `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiUrl)}`;
 
     const rEl = document.getElementById('checkoutStep2Recipient');
     const aEl = document.getElementById('checkoutStep2Amount');
-    const uEl = document.getElementById('checkoutStep2UpiId');
-    const blinkitBtn = document.getElementById('blinkitDirectPayBtn');
-    const blinkitAmount = document.getElementById('blinkitPayBtnAmount');
 
     if (rEl) rEl.textContent = `${details.customerName} (${details.phone})`;
     if (aEl) aEl.textContent = `₹${total.toLocaleString('en-IN')}`;
     if (qrImg) qrImg.src = qrUrl;
-    if (uEl) uEl.textContent = upiId;
-    if (blinkitAmount) blinkitAmount.textContent = `₹${total.toLocaleString('en-IN')}`;
-    if (blinkitBtn) blinkitBtn.href = upiUrl;
-
-    const gpayLink = document.getElementById('payViaGpay');
-    const phonepeLink = document.getElementById('payViaPhonepe');
-    const paytmLink = document.getElementById('payViaPaytm');
-    const bhimLink = document.getElementById('payViaBhim');
-
-    if (gpayLink) gpayLink.href = upiUrl;
-    if (phonepeLink) phonepeLink.href = upiUrl;
-    if (paytmLink) paytmLink.href = upiUrl;
-    if (bhimLink) bhimLink.href = upiUrl;
-
-    const autoBtn = document.getElementById('autoCheckPaymentBtn');
-    if (autoBtn) {
-      autoBtn.disabled = false;
-      autoBtn.textContent = '✓ I Have Paid on UPI (Instant Auto-Verify)';
-    }
   },
 
   handlePaymentMethodChange() {

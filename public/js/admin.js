@@ -1480,9 +1480,47 @@ const Admin = {
                 <input type="password" name="razorpayKeySecret" class="form-input" placeholder="Generated from Razorpay dashboard" value="${s.razorpayKeySecret || ''}" />
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" style="font-size: 0.8rem;">Direct UPI ID (for instant QR &amp; GPay/PhonePe payments)</label>
-              <input type="text" name="upiId" class="form-input" placeholder="e.g. akanksha.lko30@oksbi" value="${s.upiId || 'akanksha.lko30@oksbi'}" />
+            <div class="form-grid" style="margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Direct UPI ID (for instant QR &amp; GPay/PhonePe payments)</label>
+                <input type="text" name="upiId" class="form-input" placeholder="e.g. akanksha.lko30@oksbi" value="${s.upiId || 'akanksha.lko30@oksbi'}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Custom Payment Link / UPI Deep Link (Optional)</label>
+                <input type="text" name="upiLink" class="form-input" placeholder="e.g. upi://pay?pa=... or https://..." value="${s.upiLink || ''}" />
+              </div>
+            </div>
+
+            <!-- Custom QR Code Image Upload & Preview Connected to Cloudinary & Firestore -->
+            <div class="form-group" style="background: white; border: 1.5px dashed var(--border-pink); padding: 1.25rem; border-radius: 8px; margin-top: 0.75rem;">
+              <label class="form-label" style="font-size: 0.85rem; font-weight: 700; color: var(--color-pink-600); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>📷</span> Custom QR Code Image (Cloudinary &amp; Database Connected)
+              </label>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+                Upload your actual UPI QR code image directly to Cloudinary, or paste an external QR image URL. It will be stored in Firestore database and displayed during customer checkout.
+              </p>
+
+              <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+                <div style="width: 100px; height: 100px; border: 1.5px solid var(--border-pink); border-radius: 12px; background: #fafafa; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                  <img id="adminQrPreview" src="${s.qrUrl || ''}" alt="QR Preview" style="width: 100%; height: 100%; object-fit: contain; ${s.qrUrl ? 'display: block;' : 'display: none;'}" />
+                  <span id="adminQrPlaceholder" style="${s.qrUrl ? 'display: none;' : 'display: block; font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 6px;'}">No Custom QR Image</span>
+                </div>
+
+                <div style="flex: 1; min-width: 240px;">
+                  <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.25rem;">QR Code Image URL (auto-populated upon upload)</label>
+                  <input type="text" name="qrUrl" id="adminQrUrlInput" class="form-input" placeholder="https://res.cloudinary.com/..." value="${s.qrUrl || ''}" style="margin-bottom: 0.65rem; font-size: 0.82rem; font-family: var(--font-mono);" />
+                  
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <label class="btn btn-secondary btn-sm" style="cursor: pointer; font-size: 0.78rem; padding: 0.35rem 0.85rem;">
+                      📁 Upload QR to Cloudinary
+                      <input type="file" id="adminQrFileInput" accept="image/*" style="display: none;" onchange="Admin.handleQrUpload(event)" />
+                    </label>
+                    <button type="button" id="adminClearQrBtn" class="btn btn-sm" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; cursor: pointer; ${s.qrUrl ? 'display: inline-block;' : 'display: none;'}" onclick="Admin.clearCustomQr()">
+                      ✕ Clear &amp; Auto-Generate
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1654,17 +1692,94 @@ const Admin = {
       phone: form.elements['phone'].value,
       razorpayKeyId: form.elements['razorpayKeyId'] ? form.elements['razorpayKeyId'].value.trim() : '',
       razorpayKeySecret: form.elements['razorpayKeySecret'] ? form.elements['razorpayKeySecret'].value.trim() : '',
-      upiId: form.elements['upiId'] ? form.elements['upiId'].value.trim() : '9517155681@okaxis'
+      upiId: form.elements['upiId'] ? form.elements['upiId'].value.trim() : 'akanksha.lko30@oksbi',
+      upiLink: form.elements['upiLink'] ? form.elements['upiLink'].value.trim() : '',
+      qrUrl: form.elements['qrUrl'] ? form.elements['qrUrl'].value.trim() : ''
     };
 
     const res = await API.updateSettings(data);
     if (res.success) {
-      App.showToast('🌸 Bio, Portrait Photo, Payment Keys & Settings saved successfully!');
+      App.showToast('🌸 Bio, Portrait Photo, Payment Keys, QR & Settings saved to Firestore!');
       App.refreshSettings(res.data);
       const container = document.getElementById('adminTabContent');
       if (container && this.currentTab === 'settings') {
         this.renderSettings(container);
       }
+    }
+  },
+
+  async handleQrUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('adminQrPreview');
+    const placeholder = document.getElementById('adminQrPlaceholder');
+    const urlInput = document.getElementById('adminQrUrlInput');
+    const clearBtn = document.getElementById('adminClearQrBtn');
+
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    }
+    if (placeholder) placeholder.style.display = 'none';
+
+    try {
+      App.showToast('⏳ Uploading QR Code to Cloudinary...');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'QR upload failed');
+      }
+
+      const qrUrl = data.url;
+      if (urlInput) urlInput.value = qrUrl;
+      if (preview) {
+        preview.src = qrUrl;
+        preview.style.display = 'block';
+      }
+      if (clearBtn) clearBtn.style.display = 'inline-block';
+
+      // Auto-persist directly to Firestore settings
+      const updateRes = await API.updateSettings({ qrUrl });
+      if (updateRes.success && updateRes.data) {
+        App.refreshSettings(updateRes.data);
+      }
+      App.showToast('✅ Custom QR Code uploaded to Cloudinary and saved to database!');
+    } catch (err) {
+      console.error('QR upload error:', err);
+      App.showToast('❌ QR upload failed: ' + err.message);
+    }
+  },
+
+  async clearCustomQr() {
+    const urlInput = document.getElementById('adminQrUrlInput');
+    const preview = document.getElementById('adminQrPreview');
+    const placeholder = document.getElementById('adminQrPlaceholder');
+    const clearBtn = document.getElementById('adminClearQrBtn');
+
+    if (urlInput) urlInput.value = '';
+    if (preview) {
+      preview.src = '';
+      preview.style.display = 'none';
+    }
+    if (placeholder) placeholder.style.display = 'block';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    try {
+      const updateRes = await API.updateSettings({ qrUrl: '' });
+      if (updateRes.success && updateRes.data) {
+        App.refreshSettings(updateRes.data);
+      }
+      App.showToast('Cleared custom QR. Dynamic amount QR will be generated.');
+    } catch (err) {
+      console.error('Clear QR error:', err);
     }
   },
 

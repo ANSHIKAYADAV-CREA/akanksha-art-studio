@@ -790,7 +790,7 @@
         </span>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-        Pay directly via your preferred UPI app link or scan the QR code.
+        Scan the QR code using any UPI app to complete payment.
       </p>
 
       <!-- Recipient & Order info pill -->
@@ -804,99 +804,14 @@
         </div>
       </div>
 
-      <!-- MAIN PAYMENT PRESENTATION WITH IN-PLACE QR TO BLUE TICK MORPHING -->
-      <div id="checkoutStep2QrContainer" style="background: var(--color-pink-50); border: 1.5px dashed var(--color-pink-400); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; text-align: center; transition: all 0.4s ease;">
+      <!-- MAIN PAYMENT PRESENTATION: ONLY QR CODE VISIBLE -->
+      <div id="checkoutStep2QrContainer" style="background: var(--color-pink-50); border: 1.5px dashed var(--color-pink-400); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; text-align: center; transition: all 0.4s ease;">
         
-        <!-- The center box where QR code displays and morphs into a Blue Tick upon payment -->
-        <div id="checkoutCenterMorphBox" style="width: 185px; height: 185px; margin: 0 auto 0.85rem; background: white; padding: 10px; border-radius: 16px; border: 1.5px solid var(--border-pink); box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.4s ease;">
-          
-          <!-- State 1: Active QR Code -->
-          <img id="checkoutStep2Qr" src="" alt="UPI Payment QR Code" style="width: 100%; height: 100%; object-fit: contain; transition: opacity 0.3s ease;" />
-          
-          <!-- State 2: Verified Blue Tick (Replaces QR code in exact same place!) -->
-          <div id="checkoutBlueTickBox" style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center;">
-            <div class="blue-tick-circle">
-              ✓
-            </div>
-            <div style="margin-top: 0.65rem; font-size: 0.82rem; font-weight: 800; color: #1d4ed8; letter-spacing: 0.5px;">
-              PAID &amp; VERIFIED
-            </div>
-          </div>
+        <!-- The center box where QR code displays -->
+        <div id="checkoutCenterMorphBox" style="width: 220px; height: 220px; margin: 0 auto; background: white; padding: 12px; border-radius: 16px; border: 1.5px solid var(--border-pink); box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.4s ease;">
+          <img id="checkoutStep2Qr" src="" alt="UPI Payment QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
         </div>
 
-        <!-- QR Meta / UPI ID (Hidden when paid) -->
-        <div id="checkoutUpiIdRow" style="margin-bottom: 0.65rem;">
-          <span style="display: inline-block; background: white; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--border-pink); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--color-pink-600);">
-            <span id="checkoutStep2UpiId">akanksha.lko30@oksbi</span>
-          </span>
-          <button type="button" id="copyStep2UpiBtn" style="background: white; border: 1px solid var(--border-pink); color: var(--color-pink-600); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 999px; cursor: pointer; margin-left: 0.4rem;">
-            📋 Copy UPI
-          </button>
-        </div>
-
-        <p id="checkoutQrSubText" style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-          Scan with any UPI app or tap the instant Blinkit-style pay links below.
-        </p>
-
-        <!-- Dynamic Success message in place of subtitle when blue tick is active -->
-        <div id="checkoutBlueTickSuccessNotice" style="display: none; color: #15803d; font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem;">
-          🎉 Payment confirmed! Transferring to order confirmation...
-        </div>
-      </div>
-
-      <!-- BLINKIT STYLE DIRECT LINK PAYMENT ACTIONS (NO MANUAL UTR REQUIRED!) -->
-      <div id="checkoutLinkPaymentBox" style="background: white; border: 1px solid var(--border-pink); padding: 1.25rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 1rem;">
-        
-        <!-- Automated Radar Status -->
-        <div id="checkoutLiveStatusBadge" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 0.6rem 0.85rem; border-radius: var(--radius-md); font-weight: 600; font-size: 0.82rem; margin-bottom: 1rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-          <span class="status-pulse-dot" style="width: 8px; height: 8px; background: #16a34a; border-radius: 50%; display: inline-block; animation: blinkPulse 1.2s infinite;"></span>
-          <span id="checkoutLiveStatusText">📡 Automated Gateway: Awaiting payment confirmation...</span>
-        </div>
-
-        <!-- 1. Blinkit Big Intent Payment Button -->
-        <a id="blinkitDirectPayBtn" href="#" class="blinkit-upi-btn" target="_blank">
-          <span style="font-size: 1.2rem;">⚡</span>
-          <span>Pay <span id="blinkitPayBtnAmount">₹0</span> via UPI App</span>
-          <span style="font-size: 0.8rem; opacity: 0.9; margin-left: auto;">Tap to Pay →</span>
-        </a>
-
-        <!-- 2. Individual UPI Apps Grid (Blinkit style app selector) -->
-        <div style="margin-top: 0.85rem;">
-          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">
-            Or choose your payment app:
-          </div>
-          <div class="upi-app-grid">
-            <a id="payViaGpay" href="#" class="upi-app-chip" target="_blank">
-              <span class="upi-app-chip-icon">🟢</span>
-              <span>Google Pay</span>
-            </a>
-            <a id="payViaPhonepe" href="#" class="upi-app-chip" target="_blank">
-              <span class="upi-app-chip-icon">🟣</span>
-              <span>PhonePe</span>
-            </a>
-            <a id="payViaPaytm" href="#" class="upi-app-chip" target="_blank">
-              <span class="upi-app-chip-icon">🔵</span>
-              <span>Paytm</span>
-            </a>
-            <a id="payViaBhim" href="#" class="upi-app-chip" target="_blank">
-              <span class="upi-app-chip-icon">🟠</span>
-              <span>BHIM / CRED</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- 3. Automated Instant Verification Trigger -->
-        <div style="margin-top: 1rem;">
-          <button type="button" id="autoCheckPaymentBtn" class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, var(--color-pink-500) 0%, var(--color-pink-600) 100%);">
-            ✓ I Have Paid on UPI (Instant Auto-Verify)
-          </button>
-        </div>
-
-        <div style="text-align: center; margin-top: 0.85rem;">
-          <button type="button" id="reportPaymentIssueBtn" style="background: none; border: none; color: #dc2626; font-size: 0.78rem; text-decoration: underline; cursor: pointer; padding: 0.25rem;">
-            Amount deducted but facing delay? Click here to report
-          </button>
-        </div>
       </div>
 
     </div>
