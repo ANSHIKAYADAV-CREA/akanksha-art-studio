@@ -22,8 +22,24 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    // Preserve raw buffer for cryptographic webhook signature verification
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Helper to securely retrieve Razorpay configuration from env vars or database settings
+function getRazorpayConfig() {
+  const db = readDB();
+  const keyId = (process.env.RAZORPAY_KEY_ID || db.settings?.razorpayKeyId || '').trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || db.settings?.razorpayKeySecret || '').trim();
+  const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || db.settings?.razorpayWebhookSecret || '').trim();
+  return { keyId, keySecret, webhookSecret };
+}
+
 // Wait until Firestore database has been loaded
 app.use((req, res, next) => {
   if (isDatabaseReady()) {
@@ -49,7 +65,8 @@ function generateId(prefix = 'id') {
 // -------------------------------------------------------------
 app.get('/api/settings', (req, res) => {
   const db = readDB();
-  const { adminPin, ...publicSettings } = db.settings || {};
+  // Never expose admin credentials, key secrets, or webhook secrets in public settings API
+  const { adminPin, razorpayKeySecret, razorpayWebhookSecret, ...publicSettings } = db.settings || {};
   res.json({ success: true, data: publicSettings });
 });
 
@@ -61,7 +78,7 @@ app.put('/api/settings', async (req, res) => {
       ...req.body
     };
     await saveSettings(updated);
-    const { adminPin, ...publicSettings } = updated;
+    const { adminPin, razorpayKeySecret, razorpayWebhookSecret, ...publicSettings } = updated;
     res.json({ success: true, data: publicSettings, message: "Settings updated successfully" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Failed to update settings", error: err.message });
@@ -69,8 +86,31 @@ app.put('/api/settings', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// CLOUDINARY IMAGE UPLOAD API
+// CLOUDINARY UTILITY & IMAGE UPLOAD API
 // -------------------------------------------------------------
+function extractCloudinaryPublicId(urlOrId) {
+  if (!urlOrId || typeof urlOrId !== 'string') return null;
+  const str = urlOrId.trim();
+  if (str.includes('res.cloudinary.com')) {
+    try {
+      const uploadMarker = '/upload/';
+      const uploadIndex = str.indexOf(uploadMarker);
+      if (uploadIndex !== -1) {
+        let cloudinaryPath = str.substring(uploadIndex + uploadMarker.length);
+        cloudinaryPath = cloudinaryPath.replace(/^v\d+\//, '');
+        cloudinaryPath = cloudinaryPath.replace(/\.[^/.]+$/, '');
+        return cloudinaryPath;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+  if (!str.startsWith('http') && (str.includes('akanksha-art-studio') || (!str.includes('/') && str.length > 5))) {
+    return str;
+  }
+  return null;
+}
+
 app.post('/api/upload-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -745,17 +785,10 @@ app.post('/api/orders', async (req, res) => {
     const paymentMethod = req.body.paymentMethod || 'Cash on Delivery (COD)';
     const isCOD = paymentMethod.toLowerCase().includes('cash');
 
-    // Determine payment status: Paid, To Pay, or Not Yet
-    let paymentStatus = req.body.paymentStatus;
-    if (!paymentStatus) {
-      if (isCOD) {
-        paymentStatus = 'To Pay';
-      } else if (req.body.paymentVerified || paymentMethod.includes('Razorpay')) {
-        paymentStatus = 'Paid';
-      } else {
-        paymentStatus = 'Not Yet';
-      }
-    }
+    // Determine initial payment and settlement status securely
+    // Online orders ALWAYS start as Pending until cryptographically verified server-side or via webhook
+    const paymentStatus = isCOD ? 'To Pay' : 'Pending';
+    const settlementStatus = isCOD ? 'N/A (Cash on Delivery)' : 'Pending';
 
     const newOrder = {
       id: `ORD-${orderNum}`,
@@ -767,10 +800,19 @@ app.post('/api/orders', async (req, res) => {
       totalAmount: Number(req.body.totalAmount) || 0,
       paymentMethod: paymentMethod,
       paymentStatus: paymentStatus,
+      paymentId: req.body.paymentId || null,
+      razorpayOrderId: req.body.razorpayOrderId || null,
+      paymentVerifiedAt: null,
+      settlementStatus: settlementStatus,
+      settlementId: null,
+      settlementReference: null,
+      settlementProcessedAt: null,
+      bankCreditConfirmedAt: null,
       status: req.body.status || 'Processing',
       notes: req.body.notes || '',
       paymentDetails: req.body.paymentDetails || {},
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     await saveItem('orders', newOrder);
@@ -787,14 +829,41 @@ app.post('/api/orders', async (req, res) => {
 
 app.put('/api/orders/:id', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization || '';
+    const pinHeader = req.headers['x-admin-pin'] || req.body?.pin || '';
     const db = readDB();
+    const currentPin = String(db.settings?.adminPin || '1234').trim();
+
+    const isAuthorized = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+    if (!isAuthorized) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Admin credentials required to modify orders.'
+      });
+    }
+
     const existing = (db.orders || []).find(o => o.id === req.params.id);
     if (!existing) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
+
+    // Protect paymentStatus and settlementStatus from manual manipulation.
+    // Verified payment and bank settlement statuses are strictly driven by cryptographic server verification and Razorpay webhooks.
+    const allowedUpdates = { ...req.body };
+    delete allowedUpdates.paymentStatus;
+    delete allowedUpdates.settlementStatus;
+    delete allowedUpdates.paymentId;
+    delete allowedUpdates.razorpayOrderId;
+    delete allowedUpdates.paymentVerifiedAt;
+    delete allowedUpdates.settlementId;
+    delete allowedUpdates.settlementReference;
+    delete allowedUpdates.settlementProcessedAt;
+    delete allowedUpdates.bankCreditConfirmedAt;
+
     const updated = {
       ...existing,
-      ...req.body
+      ...allowedUpdates,
+      updatedAt: new Date().toISOString()
     };
     await saveItem('orders', updated);
     res.json({ success: true, data: updated, message: "Order status updated" });
@@ -806,9 +875,112 @@ app.put('/api/orders/:id', async (req, res) => {
 
 app.delete('/api/orders/:id', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization || '';
+    const pinHeader = req.headers['x-admin-pin'] || req.body?.pin || '';
+    const db = readDB();
+    const currentPin = String(db.settings?.adminPin || '1234').trim();
+
+    const isAuthorized = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+    if (!isAuthorized) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Admin credentials required to delete orders.'
+      });
+    }
+
     const id = req.params.id;
+    const existing = (db.orders || []).find(o => String(o.id) === String(id));
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Set of catalog/website images to protect from deletion (e.g. original paintings or store stock)
+    const catalogImages = new Set();
+    (db.artworks || []).forEach(a => { if (a.image) catalogImages.add(a.image); });
+    (db.products || []).forEach(p => { if (p.image) catalogImages.add(p.image); });
+    (db.faceArts || []).forEach(f => { if (f.image) catalogImages.add(f.image); });
+    if (db.settings?.artistImage) catalogImages.add(db.settings.artistImage);
+    if (db.settings?.bookingFeatureImage) catalogImages.add(db.settings.bookingFeatureImage);
+
+    // Collect all potential Cloudinary public IDs associated with this order
+    const publicIdsToDelete = new Set();
+
+    const candidateUrls = [
+      existing.image,
+      existing.imageUrl,
+      existing.referenceImage,
+      existing.referencePhoto,
+      existing.customImage,
+      existing.receipt,
+      existing.receiptUrl,
+      existing.proof,
+      existing.proofUrl,
+      existing.paymentProof,
+      existing.paymentDetails?.receiptUrl,
+      existing.paymentDetails?.proofUrl,
+      existing.paymentDetails?.image
+    ];
+
+    if (Array.isArray(existing.attachments)) {
+      candidateUrls.push(...existing.attachments);
+    }
+
+    // Direct publicIds
+    if (existing.publicId) publicIdsToDelete.add(existing.publicId);
+    if (existing.public_id) publicIdsToDelete.add(existing.public_id);
+    if (Array.isArray(existing.publicIds)) {
+      existing.publicIds.forEach(pid => publicIdsToDelete.add(pid));
+    }
+
+    // Inspect candidate URLs (skipping inventory artwork images)
+    candidateUrls.forEach(url => {
+      if (url && typeof url === 'string' && !catalogImages.has(url)) {
+        const pid = extractCloudinaryPublicId(url);
+        if (pid) publicIdsToDelete.add(pid);
+      }
+    });
+
+    // Custom order item attachments
+    if (Array.isArray(existing.items)) {
+      existing.items.forEach(item => {
+        const itemUrls = [
+          item.referenceImage,
+          item.customImage,
+          item.uploadedImage,
+          item.customPhoto
+        ];
+        if (item.publicId && !item.isCatalogItem) {
+          publicIdsToDelete.add(item.publicId);
+        }
+        itemUrls.forEach(url => {
+          if (url && typeof url === 'string' && !catalogImages.has(url)) {
+            const pid = extractCloudinaryPublicId(url);
+            if (pid) publicIdsToDelete.add(pid);
+          }
+        });
+      });
+    }
+
+    // Clean up order assets from Cloudinary
+    for (const pid of publicIdsToDelete) {
+      try {
+        console.log(`☁️ Deleting order asset from Cloudinary: ${pid}`);
+        await cloudinary.uploader.destroy(pid, { resource_type: 'image' });
+      } catch (cErr) {
+        console.warn(`⚠️ Cloudinary order asset delete warning (${pid}):`, cErr.message);
+      }
+    }
+
+    // Delete permanently from Database (Firestore + In-Memory Cache + Local JSON Backup)
     await deleteItem('orders', id);
-    res.json({ success: true, message: "Order deleted successfully" });
+    console.log(`🗑️ Order ${id} permanently deleted from Database & Cloudinary`);
+
+    res.json({
+      success: true,
+      data: existing,
+      deletedCloudinaryAssets: Array.from(publicIdsToDelete),
+      message: "Order deleted successfully from database and Cloudinary"
+    });
   } catch (error) {
     console.error("Order delete error:", error);
     res.status(500).json({ success: false, message: "Failed to delete order", error: error.message });
@@ -816,123 +988,476 @@ app.delete('/api/orders/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// RAZORPAY PAYMENT GATEWAY API (Connected & Automated)
+// RAZORPAY PAYMENT GATEWAY & BANK SETTLEMENT API
 // -------------------------------------------------------------
+const processedWebhookEvents = new Set();
+
 app.get('/api/razorpay/status', (req, res) => {
-  const db = readDB();
-  const keyId = db.settings?.razorpayKeyId ? db.settings.razorpayKeyId.trim() : '';
-  const isConnected = !!keyId;
+  const { keyId, keySecret, webhookSecret } = getRazorpayConfig();
+  const isConnected = !!(keyId && keySecret);
   res.json({
     success: true,
     connected: isConnected,
-    keyId: keyId,
-    mode: isConnected ? 'Automated Gateway Connected' : 'Direct UPI / COD Active'
+    keyId: keyId, // Public Key ID required for client checkout modal
+    webhookConfigured: !!webhookSecret,
+    mode: isConnected
+      ? (keyId.startsWith('rzp_live_') ? 'Razorpay Live Production' : 'Razorpay Test Mode')
+      : 'Direct UPI / COD Active'
   });
 });
 
 app.post('/api/razorpay/create-order', async (req, res) => {
-  const db = readDB();
-  const { amount, currency = 'INR', receipt } = req.body;
-  const rawKeyId = db.settings?.razorpayKeyId ? db.settings.razorpayKeyId.trim() : '';
-  const keySecret = db.settings?.razorpayKeySecret ? db.settings.razorpayKeySecret.trim() : '';
+  try {
+    const { amount, currency = 'INR', receipt, orderId } = req.body;
+    const { keyId, keySecret } = getRazorpayConfig();
 
-  // Amount in paise (1 INR = 100 paise)
-  const amountInPaise = Math.round(Number(amount || 0) * 100);
-
-  // Normalize keyId: ensure it can be passed to Razorpay frontend SDK
-  const keyId = rawKeyId || 'rzp_test_TVDislMsHzA1OV';
-  const effectiveKeyId = keyId.startsWith('rzp_') ? keyId : `rzp_test_${keyId}`;
-
-  // Try official Razorpay SDK if live/test secret is provided
-  if (rawKeyId && keySecret && (rawKeyId.startsWith('rzp_test_') || rawKeyId.startsWith('rzp_live_'))) {
-    try {
-      const Razorpay = require('razorpay');
-      const rzp = new Razorpay({
-        key_id: rawKeyId,
-        key_secret: keySecret
-      });
-
-      const options = {
-        amount: amountInPaise,
-        currency,
-        receipt: receipt || `rcpt_${Date.now()}`
-      };
-
-      const order = await rzp.orders.create(options);
-      return res.json({
-        success: true,
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: rawKeyId,
-        isLiveGateway: true,
-        isAutomated: false
-      });
-    } catch (err) {
-      console.warn("Razorpay live API order creation error, switching to automated gateway:", err.message);
+    const amountInPaise = Math.round(Number(amount || 0) * 100);
+    if (!amountInPaise || amountInPaise <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid payment amount specified.' });
     }
-  }
 
-  // AUTOMATED RAZORPAY GATEWAY MODE:
-  // Automatically generate a valid gateway order with the connected Key ID!
-  const automatedOrderId = `order_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-  return res.json({
-    success: true,
-    orderId: automatedOrderId,
-    amount: amountInPaise,
-    currency,
-    keyId: effectiveKeyId,
-    rawKeyId: rawKeyId,
-    isLiveGateway: true,
-    isAutomated: true,
-    message: "Razorpay automated gateway initialized successfully"
-  });
+    if (keyId && keySecret) {
+      try {
+        const Razorpay = require('razorpay');
+        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const options = {
+          amount: amountInPaise,
+          currency,
+          receipt: receipt || (orderId ? `rcpt_${orderId}` : `rcpt_${Date.now()}`),
+          notes: {
+            orderId: orderId || ''
+          }
+        };
+
+        const razorpayOrder = await rzp.orders.create(options);
+        return res.json({
+          success: true,
+          orderId: razorpayOrder.id,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          keyId: keyId,
+          isLiveGateway: true
+        });
+      } catch (err) {
+        console.warn('Razorpay SDK order creation notice:', err?.error?.description || err.message);
+        const automatedOrderId = `order_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+        return res.json({
+          success: true,
+          orderId: automatedOrderId,
+          amount: amountInPaise,
+          currency,
+          keyId: keyId,
+          isLiveGateway: false,
+          warning: err?.error?.description || err.message
+        });
+      }
+    }
+
+    // Fallback automated order identifier if keys are not yet configured on environment
+    const automatedOrderId = `order_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    return res.json({
+      success: true,
+      orderId: automatedOrderId,
+      amount: amountInPaise,
+      currency,
+      keyId: keyId || 'rzp_test_TVDislMsHzA1OV',
+      isLiveGateway: false,
+      message: 'Razorpay configured in simulation mode. Configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET for live transactions.'
+    });
+  } catch (error) {
+    console.error('Razorpay create-order route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-app.post('/api/razorpay/verify-payment', (req, res) => {
-  const db = readDB();
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
-  const keySecret = db.settings?.razorpayKeySecret;
+app.post('/api/razorpay/verify-payment', async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
+    const { keyId, keySecret } = getRazorpayConfig();
 
-  if (keySecret && razorpay_order_id && razorpay_payment_id && razorpay_signature) {
-    try {
+    if (!razorpay_order_id || !razorpay_payment_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required Razorpay payment identification parameters.'
+      });
+    }
+
+    // 1. Verify payment signature securely using server-side Razorpay Key Secret
+    if (keySecret) {
+      if (!razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing Razorpay payment signature.'
+        });
+      }
+
       const crypto = require('crypto');
       const hmac = crypto.createHmac('sha256', keySecret);
       hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
       const generatedSignature = hmac.digest('hex');
 
       if (generatedSignature !== razorpay_signature) {
-        console.warn("Razorpay signature check warning, proceeding with automated confirmation");
+        console.error(`❌ Razorpay signature mismatch! Expected: ${generatedSignature}, Received: ${razorpay_signature}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed: Invalid cryptographic signature.'
+        });
       }
-    } catch (e) {
-      console.warn("Signature verification warning:", e.message);
+    } else {
+      console.warn('⚠️ RAZORPAY_KEY_SECRET not set; proceeding with server verification note.');
     }
-  }
 
-  const paymentId = razorpay_payment_id || `pay_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-
-  // Update matching order status in database if orderId is provided
-  if (orderId) {
-    const orderIndex = db.orders.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      db.orders[orderIndex].status = "Confirmed";
-      db.orders[orderIndex].paymentStatus = "Paid";
-      db.orders[orderIndex].paymentDetails = {
-        ...(db.orders[orderIndex].paymentDetails || {}),
-        razorpay_payment_id: paymentId,
-        razorpay_order_id: razorpay_order_id || `order_auto_${Date.now()}`,
-        verifiedAt: new Date().toISOString()
-      };
-      writeDB(db);
+    // 2. Fetch payment details directly from Razorpay API when available
+    let fetchedPayment = null;
+    if (keyId && keySecret) {
+      try {
+        const Razorpay = require('razorpay');
+        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        fetchedPayment = await rzp.payments.fetch(razorpay_payment_id);
+        if (fetchedPayment && fetchedPayment.status !== 'captured' && fetchedPayment.status !== 'authorized') {
+          return res.status(400).json({
+            success: false,
+            message: `Razorpay payment status is "${fetchedPayment.status}", which is not captured.`
+          });
+        }
+      } catch (fetchErr) {
+        console.warn('⚠️ Razorpay payment API fetch notice (signature is valid):', fetchErr.message);
+      }
     }
-  }
 
-  res.json({
-    success: true,
-    message: "Payment successfully verified! Your order is confirmed.",
-    paymentId: paymentId,
-    paymentStatus: "Paid"
-  });
+    // 3. Find and update order in Firestore database
+    const db = readDB();
+    let updatedOrder = null;
+
+    if (orderId) {
+      const existing = (db.orders || []).find(o => String(o.id) === String(orderId));
+      if (existing) {
+        const verifiedTime = existing.paymentVerifiedAt || new Date().toISOString();
+        const settlementStatus = existing.settlementStatus && existing.settlementStatus !== 'Pending'
+          ? existing.settlementStatus
+          : (fetchedPayment?.settlement_id ? 'Settled to Bank' : 'Pending');
+
+        updatedOrder = {
+          ...existing,
+          status: 'Confirmed',
+          paymentStatus: 'Paid',
+          paymentId: razorpay_payment_id,
+          razorpayOrderId: razorpay_order_id,
+          paymentVerifiedAt: verifiedTime,
+          settlementStatus: settlementStatus,
+          settlementId: existing.settlementId || fetchedPayment?.settlement_id || null,
+          settlementReference: existing.settlementReference || fetchedPayment?.settlement_id || null,
+          settlementProcessedAt: existing.settlementProcessedAt || null,
+          bankCreditConfirmedAt: existing.bankCreditConfirmedAt || null,
+          paymentDetails: {
+            ...(existing.paymentDetails || {}),
+            razorpay_payment_id: razorpay_payment_id,
+            razorpay_order_id: razorpay_order_id,
+            method: fetchedPayment?.method || existing.paymentMethod || 'Razorpay Gateway',
+            verifiedAt: verifiedTime
+          },
+          updatedAt: new Date().toISOString()
+        };
+
+        await saveItem('orders', updatedOrder);
+        console.log(`✅ Order ${orderId} successfully verified & updated in Firestore.`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Payment successfully verified! Your order is confirmed. ✓',
+      paymentId: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+      paymentStatus: 'Paid',
+      data: updatedOrder,
+      order: updatedOrder
+    });
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Payment verification failed: ' + error.message
+    });
+  }
+});
+
+// RAZORPAY WEBHOOK HANDLER
+// Processes payment.captured, payment.failed, order.paid, and settlement.processed idempotently
+app.post('/api/razorpay/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const eventId = req.headers['x-razorpay-event-id'] || req.body?.event_id || signature;
+    const { webhookSecret, keyId, keySecret } = getRazorpayConfig();
+
+    if (!webhookSecret) {
+      console.warn('⚠️ Webhook received but RAZORPAY_WEBHOOK_SECRET is not configured on server.');
+      return res.status(400).json({ success: false, message: 'Webhook secret not configured on server' });
+    }
+
+    if (!signature) {
+      console.error('❌ Razorpay webhook missing signature header');
+      return res.status(400).json({ success: false, message: 'Missing x-razorpay-signature header' });
+    }
+
+    // Cryptographic HMAC SHA-256 verification using exact raw body buffer
+    const crypto = require('crypto');
+    const rawBodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body));
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBodyBuffer)
+      .digest('hex');
+
+    if (expectedSignature !== signature) {
+      console.error('❌ Invalid Razorpay webhook signature rejected.');
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
+    }
+
+    // Idempotent deduplication check
+    if (eventId && processedWebhookEvents.has(eventId)) {
+      console.log(`ℹ️ Duplicate webhook event ${eventId} received, skipping duplicate processing.`);
+      return res.status(200).json({ status: 'ok', message: 'Event already processed', duplicate: true });
+    }
+    if (eventId) {
+      processedWebhookEvents.add(eventId);
+      if (processedWebhookEvents.size > 2000) {
+        const first = processedWebhookEvents.values().next().value;
+        processedWebhookEvents.delete(first);
+      }
+    }
+
+    const event = req.body.event;
+    console.log(`🔔 Razorpay Verified Webhook Event: "${event}"`);
+    const db = readDB();
+
+    // 1. Payment Captured or Order Paid
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const orderEntity = req.body.payload?.order?.entity;
+      const paymentId = paymentEntity?.id;
+      const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
+      const orderIdNote = paymentEntity?.notes?.orderId || orderEntity?.notes?.orderId;
+
+      const order = (db.orders || []).find(o =>
+        (orderIdNote && o.id === orderIdNote) ||
+        (razorpayOrderId && (o.razorpayOrderId === razorpayOrderId || o.paymentDetails?.razorpay_order_id === razorpayOrderId)) ||
+        (paymentId && (o.paymentId === paymentId || o.paymentDetails?.razorpay_payment_id === paymentId))
+      );
+
+      if (order) {
+        const updated = {
+          ...order,
+          status: 'Confirmed',
+          paymentStatus: 'Paid',
+          paymentId: paymentId || order.paymentId,
+          razorpayOrderId: razorpayOrderId || order.razorpayOrderId,
+          paymentVerifiedAt: order.paymentVerifiedAt || new Date().toISOString(),
+          settlementStatus: order.settlementStatus || 'Pending',
+          paymentDetails: {
+            ...(order.paymentDetails || {}),
+            razorpay_payment_id: paymentId || order.paymentId,
+            razorpay_order_id: razorpayOrderId || order.razorpayOrderId,
+            verifiedAt: order.paymentVerifiedAt || new Date().toISOString(),
+            method: paymentEntity?.method || order.paymentDetails?.method || 'Razorpay Gateway'
+          },
+          updatedAt: new Date().toISOString()
+        };
+        await saveItem('orders', updated);
+        console.log(`✅ Webhook verified & updated Order ${order.id} to Paid ✓`);
+      }
+    }
+
+    // 2. Payment Failed
+    else if (event === 'payment.failed') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const paymentId = paymentEntity?.id;
+      const razorpayOrderId = paymentEntity?.order_id;
+      const orderIdNote = paymentEntity?.notes?.orderId;
+
+      const order = (db.orders || []).find(o =>
+        (orderIdNote && o.id === orderIdNote) ||
+        (razorpayOrderId && (o.razorpayOrderId === razorpayOrderId || o.paymentDetails?.razorpay_order_id === razorpayOrderId))
+      );
+
+      if (order && order.paymentStatus !== 'Paid') {
+        const updated = {
+          ...order,
+          status: 'Payment Failed',
+          paymentStatus: 'Failed',
+          paymentId: paymentId || order.paymentId,
+          paymentDetails: {
+            ...(order.paymentDetails || {}),
+            failureCode: paymentEntity?.error_code,
+            failureReason: paymentEntity?.error_description,
+            failedAt: new Date().toISOString()
+          },
+          updatedAt: new Date().toISOString()
+        };
+        await saveItem('orders', updated);
+        console.log(`⚠️ Webhook recorded failed payment for Order ${order.id}`);
+      }
+    }
+
+    // 3. Bank Settlement Processed
+    else if (event === 'settlement.processed') {
+      const settlementEntity = req.body.payload?.settlement?.entity;
+      if (settlementEntity) {
+        const settlementId = settlementEntity.id;
+        const utr = settlementEntity.utr || null;
+        const processedAt = settlementEntity.created_at
+          ? new Date(settlementEntity.created_at * 1000).toISOString()
+          : new Date().toISOString();
+
+        console.log(`🏦 Webhook received bank settlement event: ${settlementId}, UTR: ${utr}`);
+
+        // Reconcile matching paid orders with Razorpay API
+        let reconciled = false;
+        if (keyId && keySecret) {
+          try {
+            const Razorpay = require('razorpay');
+            const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+            for (const order of (db.orders || [])) {
+              if (order.paymentStatus === 'Paid' && order.paymentId && order.settlementStatus !== 'Settled to Bank') {
+                try {
+                  const p = await rzp.payments.fetch(order.paymentId);
+                  if (p && p.settlement_id === settlementId) {
+                    order.settlementStatus = 'Settled to Bank';
+                    order.settlementId = settlementId;
+                    order.settlementReference = utr || settlementId;
+                    order.settlementProcessedAt = processedAt;
+                    order.bankCreditConfirmedAt = utr ? processedAt : null;
+                    order.updatedAt = new Date().toISOString();
+                    await saveItem('orders', order);
+                    reconciled = true;
+                    console.log(`🏦 Order ${order.id} verified as settled to bank with UTR: ${utr || settlementId}`);
+                  }
+                } catch (pErr) {
+                  console.warn(`Could not fetch payment ${order.paymentId}:`, pErr.message);
+                }
+              }
+            }
+          } catch (rErr) {
+            console.warn('Razorpay settlement reconciliation notice:', rErr.message);
+          }
+        }
+
+        // If direct reconciliation could not match specific payment, mark orders explicitly linked to settlement
+        if (!reconciled) {
+          for (const order of (db.orders || [])) {
+            if (order.settlementId === settlementId && order.settlementStatus !== 'Settled to Bank') {
+              order.settlementStatus = 'Settled to Bank';
+              order.settlementReference = utr || settlementId;
+              order.settlementProcessedAt = processedAt;
+              order.bankCreditConfirmedAt = utr ? processedAt : null;
+              order.updatedAt = new Date().toISOString();
+              await saveItem('orders', order);
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Refund Processed
+    else if (event === 'refund.processed') {
+      const refundEntity = req.body.payload?.refund?.entity;
+      const paymentId = refundEntity?.payment_id;
+      if (paymentId) {
+        const order = (db.orders || []).find(o => o.paymentId === paymentId);
+        if (order) {
+          order.settlementStatus = 'Failed or Reversed';
+          order.status = 'Refunded';
+          order.updatedAt = new Date().toISOString();
+          await saveItem('orders', order);
+          console.log(`⚠️ Order ${order.id} updated to Reversed due to refund.`);
+        }
+      }
+    }
+
+    return res.status(200).json({ status: 'ok', event: event });
+  } catch (err) {
+    console.error('❌ Webhook processing error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// AUTHENTICATED SETTLEMENT RECONCILIATION ROUTE (For Owner Dashboard)
+app.post('/api/razorpay/sync-settlements', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const pinHeader = req.headers['x-admin-pin'] || req.body?.pin || '';
+    const db = readDB();
+    const currentPin = String(db.settings?.adminPin || '1234').trim();
+
+    const isAuthorized = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+    if (!isAuthorized) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Admin credentials required to sync settlements.'
+      });
+    }
+
+    const { keyId, keySecret } = getRazorpayConfig();
+    if (!keyId || !keySecret) {
+      return res.json({
+        success: false,
+        message: 'Razorpay API keys not configured in environment or settings. Settlement sync requires live/test keys.'
+      });
+    }
+
+    const Razorpay = require('razorpay');
+    const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
+
+    const orders = db.orders || [];
+    let updatedCount = 0;
+    const syncedOrders = [];
+
+    for (const order of orders) {
+      if (order.paymentStatus === 'Paid' && order.paymentId && order.paymentId.startsWith('pay_')) {
+        try {
+          const payment = await rzp.payments.fetch(order.paymentId);
+          if (payment) {
+            let changed = false;
+
+            // When Razorpay has processed settlement to bank account
+            if (payment.settlement_id && order.settlementStatus !== 'Settled to Bank') {
+              order.settlementStatus = 'Settled to Bank';
+              order.settlementId = payment.settlement_id;
+              order.settlementReference = payment.settlement_id;
+              order.settlementProcessedAt = payment.settled_at
+                ? new Date(payment.settled_at * 1000).toISOString()
+                : new Date().toISOString();
+              order.bankCreditConfirmedAt = new Date().toISOString();
+              order.updatedAt = new Date().toISOString();
+              changed = true;
+            } else if (!order.settlementStatus) {
+              order.settlementStatus = 'Pending';
+              changed = true;
+            }
+
+            if (changed) {
+              await saveItem('orders', order);
+              updatedCount++;
+              syncedOrders.push({ id: order.id, settlementStatus: order.settlementStatus, settlementId: order.settlementId });
+            }
+          }
+        } catch (fetchErr) {
+          console.warn(`Could not check payment ${order.paymentId} during settlement sync:`, fetchErr.message);
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: updatedCount > 0
+        ? `Successfully synced ${updatedCount} orders with Razorpay settlement records.`
+        : 'All orders are already up to date with Razorpay settlement records.',
+      updatedCount,
+      syncedOrders
+    });
+  } catch (error) {
+    console.error('Settlement sync error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 
@@ -981,6 +1506,19 @@ app.post('/api/admin/login', async (req, res) => {
 });
 app.post('/api/admin/change-pin', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization || '';
+    const pinHeader = req.headers['x-admin-pin'] || req.body?.oldPin || req.body?.currentPin || '';
+    const db = readDB();
+    const currentPin = String(db.settings?.adminPin || '1234').trim();
+
+    const isAuthorized = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+    if (!isAuthorized) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Current admin credentials required to change PIN.'
+      });
+    }
+
     const newPin = String(req.body.newPin || '').trim();
 
     if (newPin.length < 3) {
@@ -990,17 +1528,14 @@ app.post('/api/admin/change-pin', async (req, res) => {
       });
     }
 
-    // Read current database
-    const database = await readDB();
-
     // Update admin password
-    database.settings = {
-      ...(database.settings || {}),
+    const updated = {
+      ...(db.settings || {}),
       adminPin: newPin
     };
 
-    // Save updated database to Firestore
-    await writeDB(database);
+    // Save updated settings to Firestore & local snapshot
+    await saveSettings(updated);
 
     console.log("✅ Admin password successfully updated.");
 

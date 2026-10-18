@@ -11,12 +11,24 @@ const API = {
   // Generic fetch wrapper
   async request(endpoint, options = {}) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+
+      // Automatically attach admin credentials if available
+      const token = sessionStorage.getItem('akanksha_admin_token') || localStorage.getItem('akanksha_admin_token');
+      const pin = sessionStorage.getItem('akanksha_admin_pin') || localStorage.getItem('akanksha_admin_pin');
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      if (pin && !headers['x-admin-pin']) {
+        headers['x-admin-pin'] = pin;
+      }
+
       const response = await fetch(`${API_BASE}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-        ...options
+        ...options,
+        headers
       });
 
       if (!response.ok) {
@@ -27,14 +39,16 @@ const API = {
     }  catch (err) {
       console.error(`[API] Request failed for ${endpoint}:`, err.message);
 
-      // NEVER use local fallback for admin authentication
+      // NEVER use local fallback for admin authentication or payment verification/settlement
       if (
         endpoint === '/api/admin/login' ||
-        endpoint === '/api/admin/change-pin'
+        endpoint === '/api/admin/change-pin' ||
+        endpoint === '/api/razorpay/sync-settlements' ||
+        endpoint === '/api/razorpay/verify-payment'
       ) {
         return {
           success: false,
-          message: 'Admin authentication service is unavailable.'
+          message: err.message || 'Payment or admin authentication service is unavailable.'
         };
       }
 
@@ -111,9 +125,10 @@ const API = {
   updateOrder: (id, data) => API.request(`/api/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteOrder: (id) => API.request(`/api/orders/${id}`, { method: 'DELETE' }),
 
-  // Razorpay Gateway
+  // Razorpay Gateway & Bank Settlement
   createRazorpayOrder: (data) => API.request('/api/razorpay/create-order', { method: 'POST', body: JSON.stringify(data) }),
   verifyRazorpayPayment: (data) => API.request('/api/razorpay/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+  syncRazorpaySettlements: () => API.request('/api/razorpay/sync-settlements', { method: 'POST' }),
 
 
   // Admin Auth & Stats
@@ -213,6 +228,13 @@ const API = {
 
     if (endpoint === '/api/orders') {
       return { success: true, data: db.orders || [] };
+    }
+
+    if (endpoint.startsWith('/api/orders/') && method === 'DELETE') {
+      const orderId = endpoint.replace('/api/orders/', '');
+      db.orders = (db.orders || []).filter(o => o.id !== orderId);
+      try { localStorage.setItem(key, JSON.stringify(db)); } catch (e) {}
+      return { success: true, message: 'Order deleted successfully' };
     }
 
     return { success: false, data: [], message: 'Offline request.' };

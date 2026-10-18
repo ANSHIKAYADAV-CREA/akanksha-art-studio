@@ -584,111 +584,133 @@ const Store = {
 
     if (isOnlineGateway) {
       try {
+        const self = this;
+
+        // Step 1: Create initial order on server with Pending payment status
+        const initialOrderData = {
+          customerName,
+          email,
+          phone,
+          address,
+          items: [...self.cart],
+          totalAmount: total,
+          paymentMethod,
+          paymentStatus: 'Pending'
+        };
+
+        const initialOrderRes = await API.createOrder(initialOrderData);
+        if (!initialOrderRes || !initialOrderRes.success) {
+          throw new Error(initialOrderRes?.message || 'Could not initialize order.');
+        }
+        const placedOrder = initialOrderRes.data;
+
+        // Step 2: Create Razorpay order on backend
         const rzpRes = await API.createRazorpayOrder({
           amount: total,
           currency: 'INR',
-          receipt: `rcpt_${Date.now()}`
+          orderId: placedOrder.id,
+          receipt: `rcpt_${placedOrder.id}`
         });
 
-        if (rzpRes && rzpRes.success && rzpRes.keyId) {
-          const self = this;
+        if (!rzpRes || !rzpRes.success) {
+          throw new Error(rzpRes?.message || 'Failed to initialize payment gateway.');
+        }
 
-          const completePaidOrder = async (paymentId, orderId) => {
-            const finalPayId = paymentId || `pay_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-            const orderData = {
-              customerName,
-              email,
-              phone,
-              address,
-              items: [...self.cart],
-              totalAmount: total,
-              paymentMethod: `${paymentMethod} (Razorpay Ref: ${finalPayId})`,
-              paymentStatus: 'Paid',
-              paymentDetails: {
-                razorpay_payment_id: finalPayId,
-                razorpay_order_id: orderId || rzpRes.orderId,
-                method: 'Razorpay Gateway',
-                verifiedAt: new Date().toISOString()
+        // Dynamically load Razorpay SDK if not already loaded in DOM
+        if (typeof Razorpay === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Razorpay SDK failed to load. Please check your internet connection.'));
+            document.head.appendChild(script);
+          });
+        }
+
+        if (typeof Razorpay !== 'undefined') {
+          const options = {
+            key: rzpRes.keyId,
+            amount: rzpRes.amount,
+            currency: rzpRes.currency || 'INR',
+            name: 'AKAMATOE Art Studio',
+            description: `Original Art & Artifacts (${self.cart.length} items)`,
+            image: 'https://res.cloudinary.com/wempi94r/image/upload/v1788366558/akanksha-art-studio/spmgiyneusf3wopgn0in.jpg',
+            order_id: rzpRes.orderId && !rzpRes.orderId.startsWith('order_auto_') ? rzpRes.orderId : undefined,
+            prefill: {
+              name: customerName,
+              email: email,
+              contact: phone
+            },
+            notes: {
+              orderId: placedOrder.id,
+              address: address
+            },
+            theme: {
+              color: '#E64972'
+            },
+            handler: async function (response) {
+              try {
+                App.showToast('⏳ Verifying payment securely with server...');
+                const verifyRes = await API.verifyRazorpayPayment({
+                  razorpay_order_id: response.razorpay_order_id || rzpRes.orderId,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  orderId: placedOrder.id
+                });
+
+                if (verifyRes && verifyRes.success) {
+                  if (window.SoundFX) {
+                    window.SoundFX.playPaymentChime(total);
+                  }
+                  self.cart = [];
+                  self.appliedDiscount = 0;
+                  self.saveCart();
+                  App.closeModal('checkoutModal');
+                  resetSubmitBtn();
+                  self.showOrderConfirmation(verifyRes.data || verifyRes.order || {
+                    ...placedOrder,
+                    paymentStatus: 'Paid',
+                    paymentId: response.razorpay_payment_id,
+                    paymentVerifiedAt: new Date().toISOString()
+                  });
+                } else {
+                  throw new Error(verifyRes?.message || 'Payment verification could not be confirmed.');
+                }
+              } catch (verifyErr) {
+                console.error('Payment verification error:', verifyErr);
+                App.showToast('❌ Verification Failed: ' + verifyErr.message);
+                self.showOrderConfirmation({
+                  ...placedOrder,
+                  paymentStatus: 'Pending',
+                  verificationError: verifyErr.message
+                });
               }
-            };
-
-            const orderRes = await API.createOrder(orderData);
-            if (orderRes.success) {
-              await API.verifyRazorpayPayment({
-                razorpay_order_id: orderId || rzpRes.orderId,
-                razorpay_payment_id: finalPayId,
-                orderId: orderRes.data.id
-              });
-
-              // Play Soundbox chime on successful automated payment
-              if (window.SoundFX) {
-                window.SoundFX.playPaymentChime(total);
+            },
+            modal: {
+              ondismiss: function () {
+                resetSubmitBtn();
+                App.showToast('Payment window closed. You can retry checkout when ready.');
               }
-
-              self.cart = [];
-              self.appliedDiscount = 0;
-              self.saveCart();
-              App.closeModal('checkoutModal');
-              resetSubmitBtn();
-              self.showOrderConfirmation(orderRes.data);
             }
           };
 
-          if (typeof Razorpay !== 'undefined') {
-            const options = {
-              key: rzpRes.keyId,
-              amount: rzpRes.amount,
-              currency: rzpRes.currency || 'INR',
-              name: 'AKAMATOE Art Studio',
-              description: `Original Art & Artifacts (${self.cart.length} items)`,
-              image: 'https://res.cloudinary.com/wempi94r/image/upload/v1788366558/akanksha-art-studio/spmgiyneusf3wopgn0in.jpg',
-              order_id: rzpRes.isAutomated ? undefined : rzpRes.orderId,
-              prefill: {
-                name: customerName,
-                email: email,
-                contact: phone
-              },
-              notes: {
-                address: address
-              },
-              theme: {
-                color: '#E64972'
-              },
-              handler: async function (response) {
-                await completePaidOrder(response.razorpay_payment_id, response.razorpay_order_id || rzpRes.orderId);
-              },
-              modal: {
-                ondismiss: function () {
-                  resetSubmitBtn();
-                  App.showToast('Payment window closed. You can retry whenever you are ready.');
-                }
-              }
-            };
+          const razorpayInstance = new Razorpay(options);
+          razorpayInstance.on('payment.failed', function (resp) {
+            console.warn('Razorpay payment failed:', resp.error);
+            App.showToast('❌ Payment Failed: ' + (resp.error?.description || 'Transaction declined.'));
+            resetSubmitBtn();
+          });
 
-            try {
-              const razorpayInstance = new Razorpay(options);
-              razorpayInstance.on('payment.failed', async function (resp) {
-                console.warn('Razorpay live checkout modal error, executing automated capture:', resp.error);
-                App.showToast('⚡ Processing automated gateway settlement...');
-                await new Promise(r => setTimeout(r, 1000));
-                await completePaidOrder(null, rzpRes.orderId);
-              });
-
-              razorpayInstance.open();
-              return;
-            } catch (popupErr) {
-              console.warn("Razorpay popup modal failed to launch, transitioning to automated gateway capture:", popupErr);
-            }
-          }
-
-          // Automated gateway route execution
-          App.showToast('⚡ Razorpay Automated Gateway: Confirming payment settlement...');
-          await new Promise(r => setTimeout(r, 1200));
-          await completePaidOrder(null, rzpRes.orderId);
+          razorpayInstance.open();
           return;
+        } else {
+          throw new Error('Razorpay SDK failed to load in browser.');
         }
       } catch (err) {
-        console.warn("Razorpay gateway order error:", err);
+        console.error('Checkout error:', err);
+        App.showToast('❌ Checkout error: ' + err.message);
+        resetSubmitBtn();
+        return;
       }
     }
 
@@ -728,7 +750,7 @@ const Store = {
 
     if (autoBtn) {
       autoBtn.disabled = true;
-      autoBtn.textContent = '⚡ Verifying with UPI Bank Network...';
+      autoBtn.textContent = '⏳ Recording UPI Order...';
     }
     if (statusBadge) {
       statusBadge.style.background = '#eff6ff';
@@ -736,50 +758,12 @@ const Store = {
       statusBadge.style.color = '#1d4ed8';
     }
     if (statusText) {
-      statusText.innerHTML = '🔄 Interfacing with NPCI & confirming automated UPI settlement...';
+      statusText.innerHTML = '🔄 Registering order in studio queue for bank credit verification...';
     }
 
-    // Realistic network check delay
-    await new Promise(r => setTimeout(r, 1100));
+    await new Promise(r => setTimeout(r, 900));
 
-    // MORPH THE EXACT PLACE WHERE QR CODE IS DISPLAYING INTO A BLUE TICK!
-    const qrImg = document.getElementById('checkoutStep2Qr');
-    const blueTick = document.getElementById('checkoutBlueTickBox');
-    const centerBox = document.getElementById('checkoutCenterMorphBox');
-    const qrContainer = document.getElementById('checkoutStep2QrContainer');
-    const upiIdRow = document.getElementById('checkoutUpiIdRow');
-    const qrSubText = document.getElementById('checkoutQrSubText');
-    const successNotice = document.getElementById('checkoutBlueTickSuccessNotice');
-
-    if (qrImg) qrImg.style.display = 'none';
-    if (blueTick) blueTick.style.display = 'flex';
-    if (centerBox) {
-      centerBox.style.borderColor = '#2563eb';
-      centerBox.style.background = '#eff6ff';
-      centerBox.style.boxShadow = '0 10px 25px rgba(37, 99, 235, 0.22)';
-    }
-    if (qrContainer) {
-      qrContainer.style.borderColor = '#2563eb';
-      qrContainer.style.background = '#f0f9ff';
-    }
-    if (upiIdRow) upiIdRow.style.display = 'none';
-    if (qrSubText) qrSubText.style.display = 'none';
-    if (successNotice) successNotice.style.display = 'block';
-
-    if (statusBadge) {
-      statusBadge.style.background = '#dbeafe';
-      statusBadge.style.borderColor = '#93c5fd';
-      statusBadge.style.color = '#1e40af';
-    }
-    if (statusText) {
-      statusText.innerHTML = '🔵 <strong>Payment Received! Verified by Bank Network</strong>';
-    }
-
-    // PLAY SOUND CHIME & VOICE NOTIFICATION!
-    SoundFX.playPaymentChime(this.checkoutDetails.total);
-
-    const generatedUtr = '4' + Math.floor(10000000000 + Math.random() * 90000000000);
-
+    // Place order with Pending status (manual bank verification required for unauthenticated direct UPI)
     const orderData = {
       customerName: this.checkoutDetails.customerName,
       email: this.checkoutDetails.email,
@@ -787,19 +771,17 @@ const Store = {
       address: this.checkoutDetails.address,
       items: [...this.cart],
       totalAmount: this.checkoutDetails.total,
-      paymentMethod: 'UPI App (Blinkit Link)',
-      paymentStatus: 'Paid',
+      paymentMethod: 'Direct UPI Transfer (Pending Studio Bank Check)',
+      paymentStatus: 'Pending',
+      status: 'Awaiting Verification',
+      notes: 'Customer transferred via Direct UPI QR / app link. Requires manual bank credit verification before dispatch.',
       paymentDetails: {
-        method: 'UPI Instant Link',
-        systemRef: generatedUtr,
-        verifiedAt: new Date().toISOString()
+        method: 'Direct UPI App / QR',
+        submittedAt: new Date().toISOString()
       }
     };
 
     const res = await API.createOrder(orderData);
-
-    // Wait 2.2s so user visibly enjoys the animated Blue Tick and hears the Soundbox chime!
-    await new Promise(r => setTimeout(r, 2200));
 
     if (res.success) {
       const order = res.data;
@@ -811,11 +793,9 @@ const Store = {
       this.showOrderConfirmation(order);
     } else {
       App.showToast('Could not record order. Please try again.');
-      if (qrImg) qrImg.style.display = 'block';
-      if (blueTick) blueTick.style.display = 'none';
       if (autoBtn) {
         autoBtn.disabled = false;
-        autoBtn.textContent = '✓ I Have Paid on UPI (Instant Auto-Verify)';
+        autoBtn.textContent = '✓ I Have Paid on UPI (Record Order)';
       }
     }
   },
@@ -832,7 +812,7 @@ const Store = {
       address: this.checkoutDetails.address,
       items: [...this.cart],
       totalAmount: this.checkoutDetails.total,
-      paymentMethod: 'UPI Link (Issue Reported)',
+      paymentMethod: 'Direct UPI Link (Issue Reported)',
       paymentStatus: 'Issue',
       status: 'Under Verification',
       notes: 'Customer reported payment deduction issue or bank pending status during checkout.',
@@ -860,20 +840,49 @@ const Store = {
     if (modalContent) {
       const isPaid = order.paymentStatus === 'Paid';
       const isToPay = order.paymentStatus === 'To Pay';
-      const isIssue = order.paymentStatus === 'Issue';
+      const isFailed = order.paymentStatus === 'Failed';
 
       modalContent.innerHTML = `
         <div style="text-align: center; padding: 1rem 0;">
-          <div style="width: 76px; height: 76px; background: ${isIssue ? '#fee2e2' : '#dcfce7'}; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.4rem; color: ${isIssue ? '#dc2626' : '#16a34a'};">
-            ${isIssue ? '⚠️' : '✓'}
-          </div>
-          <h2 style="font-family: var(--font-serif); font-size: 2.2rem; color: var(--text-main); margin-bottom: 0.5rem;">
-            ${isIssue ? 'Order Logged (Payment Under Review)' : 'Order Placed Successfully!'}
-          </h2>
-          <p style="font-family: var(--font-editorial); font-size: 1.15rem; color: var(--text-muted); font-style: italic; margin-bottom: 1.5rem;">
-            ${isIssue 
-              ? `Thank you, ${order.customerName}! We have logged your order and our studio will verify your payment details with our bank.` 
-              : `Thank you, ${order.customerName}! Akanksha has received your order and is preparing your art package with love & handwritten notes.`}
+          ${isPaid ? `
+            <!-- DUAL AUTOMATIC CONFIRMATION INDICATOR 1: CUSTOMER SCREEN GREEN TICK -->
+            <div style="width: 82px; height: 82px; background: #dcfce7; border: 3px solid #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.8rem; color: #16a34a; box-shadow: 0 10px 25px rgba(22, 163, 74, 0.22);">
+              ✓
+            </div>
+            <h2 style="font-family: var(--font-serif); font-size: 2.2rem; color: #15803d; margin-bottom: 0.35rem;">
+              Payment Successful ✓
+            </h2>
+            <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #dcfce7; color: #166534; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.95rem; border-radius: 999px; margin-bottom: 1.25rem; border: 1px solid #86efac;">
+              🟢 Verified by Razorpay Secure Gateway
+            </div>
+          ` : isToPay ? `
+            <div style="width: 82px; height: 82px; background: #e0f2fe; border: 2.5px solid #0284c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.6rem; color: #0284c7;">
+              📦
+            </div>
+            <h2 style="font-family: var(--font-serif); font-size: 2.1rem; color: var(--text-main); margin-bottom: 0.5rem;">
+              Order Placed Successfully!
+            </h2>
+            <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #e0f2fe; color: #075985; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.95rem; border-radius: 999px; margin-bottom: 1.25rem; border: 1px solid #7dd3fc;">
+              💵 Cash on Delivery
+            </div>
+          ` : `
+            <div style="width: 82px; height: 82px; background: ${isFailed ? '#fee2e2' : '#fef3c7'}; border: 2.5px solid ${isFailed ? '#dc2626' : '#d97706'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.6rem; color: ${isFailed ? '#dc2626' : '#d97706'};">
+              ${isFailed ? '✕' : '⏳'}
+            </div>
+            <h2 style="font-family: var(--font-serif); font-size: 2rem; color: ${isFailed ? '#991b1b' : '#92400e'}; margin-bottom: 0.5rem;">
+              ${isFailed ? 'Payment Not Completed' : 'Order Received (Pending Verification)'}
+            </h2>
+            <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: ${isFailed ? '#fee2e2' : '#fef3c7'}; color: ${isFailed ? '#991b1b' : '#92400e'}; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.95rem; border-radius: 999px; margin-bottom: 1.25rem; border: 1px solid ${isFailed ? '#fca5a5' : '#fde68a'};">
+              ${isFailed ? '❌ Transaction Failed' : '⏳ Awaiting Provider Confirmation'}
+            </div>
+          `}
+
+          <p style="font-family: var(--font-editorial); font-size: 1.15rem; color: var(--text-muted); font-style: italic; margin-bottom: 1.5rem; line-height: 1.5;">
+            ${isPaid 
+              ? `Thank you, ${order.customerName}! Your payment has been securely verified. Akanksha is preparing your package with love & handwritten notes. ✨`
+              : isToPay
+              ? `Thank you, ${order.customerName}! We have received your COD order. Please keep the exact amount ready upon delivery.`
+              : `Thank you, ${order.customerName}! Your order is logged in our studio queue. We will verify the transaction record before packaging.`}
           </p>
 
           <div style="background: white; border: 1px solid var(--border-pink); border-radius: var(--radius-md); padding: 1.5rem; text-align: left; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
@@ -883,22 +892,23 @@ const Store = {
             </div>
             <div style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
               <strong>Delivery Address:</strong> ${order.address}<br/>
-              <strong>Contact:</strong> ${order.phone} (${order.email})<br/>
+              <strong>Contact:</strong> ${order.phone} (${order.email || 'No email'})<br/>
               <strong>Payment Method:</strong> ${order.paymentMethod}<br/>
               <strong>Payment Status:</strong> 
               ${isPaid 
-                ? '<span style="background: #dcfce7; color: #15803d; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">🟢 Paid (Verified ✓)</span>'
+                ? '<span style="background: #dcfce7; color: #15803d; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;">🟢 Paid (Verified ✓)</span>'
                 : isToPay
                 ? '<span style="background: #e0f2fe; color: #0369a1; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">💵 To Pay (Cash on Delivery)</span>'
-                : isIssue
-                ? '<span style="background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">⚠️ Issue (Pending Manual Verification)</span>'
-                : '<span style="background: #fef3c7; color: #b45309; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">⏳ Not Yet</span>'
+                : isFailed
+                ? '<span style="background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">❌ Failed</span>'
+                : '<span style="background: #fef3c7; color: #b45309; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.8rem;">⏳ Pending Verification</span>'
               }
-              ${order.paymentDetails?.utr ? `<br/><strong>Transaction Ref (UTR):</strong> <code style="font-family: var(--font-mono); color: var(--color-pink-600); font-weight: 700;">${order.paymentDetails.utr}</code>` : ''}
-              ${order.paymentDetails?.reportedUtr ? `<br/><strong>Reported UTR:</strong> <code style="font-family: var(--font-mono); color: #dc2626;">${order.paymentDetails.reportedUtr}</code>` : ''}
+              ${order.paymentId ? `<br/><strong>Razorpay Payment ID:</strong> <code style="font-family: var(--font-mono); color: var(--color-pink-600); font-weight: 700;">${order.paymentId}</code>` : ''}
+              ${order.paymentDetails?.razorpay_order_id ? `<br/><strong>Razorpay Order Ref:</strong> <code style="font-family: var(--font-mono); color: var(--text-muted);">${order.paymentDetails.razorpay_order_id}</code>` : ''}
+              ${order.paymentVerifiedAt ? `<br/><strong>Verified At:</strong> <span style="font-size: 0.8rem; color: var(--text-light);">${new Date(order.paymentVerifiedAt).toLocaleString('en-IN')}</span>` : ''}
             </div>
-            <div style="font-size: 1.15rem; font-weight: 700; color: var(--color-pink-600); text-align: right;">
-              Total Amount: ₹${order.totalAmount.toLocaleString('en-IN')}
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-pink-600); text-align: right; border-top: 1px dashed var(--border-pink); padding-top: 0.75rem;">
+              Total Amount: ₹${Number(order.totalAmount || 0).toLocaleString('en-IN')}
             </div>
           </div>
 

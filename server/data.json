@@ -158,7 +158,22 @@
       "publicId": "akanksha-art-studio/uxug1yykgnajrfyczmyw"
     }
   ],
-  "bookings": [],
+  "bookings": [
+    {
+      "createdAt": "2026-10-18T08:29:56.851Z",
+      "notes": "Floral motifs",
+      "clientEmail": "sanya@example.com",
+      "clientName": "Sanya Gupta",
+      "timeSlot": "Afternoon (2:00 PM - 5:00 PM)",
+      "guestCount": 35,
+      "location": "Delhi University Campus",
+      "eventType": "Fest & Cultural Gathering",
+      "id": "BK-1194",
+      "clientPhone": "+91 98777 22222",
+      "eventDate": "2026-11-20",
+      "status": "Pending"
+    }
+  ],
   "poems": [
     {
       "id": "poem-1",
@@ -232,37 +247,20 @@
       "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
       "verified": true,
       "approved": true
+    },
+    {
+      "date": "Just now",
+      "approved": true,
+      "role": "Art Enthusiast",
+      "name": "Dr. Anita Roy",
+      "rating": 5,
+      "verified": true,
+      "comment": "The Lord Krishna painting is deeply divine and brings serenity to our home.",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      "id": "rev-mvdjufo4-n9kp"
     }
   ],
   "orders": [
-    {
-      "id": "ORD-7711",
-      "customerName": "Shahendra Kumar Yadav",
-      "email": "shahendrayadav20780@gmail.com",
-      "phone": "9517155681",
-      "address": "New Police Laine\nP3/2",
-      "items": [
-        {
-          "id": "art-mtoiq5xr-bzs5",
-          "title": "Whispers of North Campus II",
-          "price": 1,
-          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
-          "category": "Original Artwork",
-          "quantity": 1
-        }
-      ],
-      "totalAmount": 1,
-      "paymentMethod": "UPI App (Blinkit Link)",
-      "paymentStatus": "Paid",
-      "status": "Processing",
-      "notes": "",
-      "paymentDetails": {
-        "method": "UPI Instant Link",
-        "systemRef": "465097829901",
-        "verifiedAt": "2026-09-30T16:59:26.860Z"
-      },
-      "createdAt": "2026-09-30T16:59:26.867Z"
-    },
     {
       "address": "New Police Laine\nP3/2",
       "notes": "",
@@ -316,6 +314,34 @@
       "status": "Processing"
     },
     {
+      "address": "echhit ka dil\npincode - akansha",
+      "notes": "",
+      "customerName": "Krishna",
+      "createdAt": "2026-10-13T18:04:07.774Z",
+      "totalAmount": 1,
+      "phone": "6393972883",
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "id": "ORD-1532",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "456908598737",
+        "verifiedAt": "2026-10-13T18:04:07.456Z"
+      },
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "krishnapathak1301@gmail.com",
+      "paymentStatus": "Paid",
+      "status": "Processing"
+    },
+    {
       "address": "New Police Laine\nP3/2",
       "notes": "",
       "customerName": "Shahendra Kumar Yadav",
@@ -340,6 +366,34 @@
         }
       ],
       "email": "shahendrayadav20780@gmail.com",
+      "paymentStatus": "Paid",
+      "status": "Processing"
+    },
+    {
+      "address": "kanpur",
+      "notes": "",
+      "customerName": "Krishna",
+      "createdAt": "2026-10-13T18:04:55.871Z",
+      "totalAmount": 15000,
+      "phone": "6393972883",
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "id": "ORD-3964",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "434146699317",
+        "verifiedAt": "2026-10-13T18:04:55.655Z"
+      },
+      "items": [
+        {
+          "id": "art-mtlgoe0j-gpae",
+          "title": "Shiv-Shakti",
+          "price": 15000,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788436098/akanksha-art-studio/lennng7bmafksdqin9yy.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "krishnapathak1301@gmail.com",
       "paymentStatus": "Paid",
       "status": "Processing"
     },
@@ -389,6 +443,34 @@
       ],
       "email": "akanshalps0@gmail.com",
       "paymentStatus": "Not Yet",
+      "status": "Processing"
+    },
+    {
+      "address": "New Police Laine\nP3/2",
+      "notes": "",
+      "customerName": "Shahendra Kumar Yadav",
+      "createdAt": "2026-09-30T16:59:26.867Z",
+      "totalAmount": 1,
+      "phone": "9517155681",
+      "paymentMethod": "UPI App (Blinkit Link)",
+      "id": "ORD-7711",
+      "paymentDetails": {
+        "method": "UPI Instant Link",
+        "systemRef": "465097829901",
+        "verifiedAt": "2026-09-30T16:59:26.860Z"
+      },
+      "items": [
+        {
+          "id": "art-mtoiq5xr-bzs5",
+          "title": "Whispers of North Campus II",
+          "price": 1,
+          "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788620938/akanksha-art-studio/lrkxgam8muhstyyufcte.jpg",
+          "category": "Original Artwork",
+          "quantity": 1
+        }
+      ],
+      "email": "shahendrayadav20780@gmail.com",
+      "paymentStatus": "Paid",
       "status": "Processing"
     },
     {

@@ -47,6 +47,17 @@ Your website will be live at `https://<YOUR_PROJECT_ID>.web.app`! 🎉
    - **Start Command**: `node server/server.js`
 5. Click **Deploy Web Service**! You'll get a free live `https://your-app.onrender.com` URL!
 
+### Environment Variables to set in Render:
+- `RAZORPAY_KEY_ID`: Your Razorpay Key ID (e.g. `rzp_live_...` or `rzp_test_...`)
+- `RAZORPAY_KEY_SECRET`: Your Razorpay Key Secret
+- `RAZORPAY_WEBHOOK_SECRET`: Your secret configured in Razorpay Webhook settings
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- `FIREBASE_SERVICE_ACCOUNT`: Stringified JSON or file path to `serviceAccountKey.json`
+
+### Razorpay Webhook URL configuration:
+- **Webhook URL**: `https://<your-app>.onrender.com/api/razorpay/webhook`
+- **Active Events**: `payment.captured`, `order.paid`, `payment.failed`, `settlement.processed`, `refund.processed`
+
 ---
 
 ## Option 3: 1-Click Free Deploy with Vercel
@@ -62,9 +73,9 @@ Your website will be live at `https://<YOUR_PROJECT_ID>.web.app`! 🎉
 ## 🗄️ Where is Data Stored?
 
 1. **Current Live Setup (Active Right Now)**:
-   - All artworks, face painting bookings, store orders, customer reviews, poems, and bio settings are stored in **`server/data.json`** via the Express REST API backend.
-   - Any changes made in the Admin Dashboard (PIN `1234`) are immediately saved to disk and persist across restarts.
+   - All artworks, face painting bookings, store orders, customer reviews, poems, and bio settings are stored in **Google Cloud Firestore** (with fallback in **`server/data.json`**) via the Express REST API backend.
+   - Admin PIN configured in database is `alright@12`.
 
 2. **Cloud Firestore Integration**:
-   - Ready-to-use config is set up in `public/js/firebase-config.js` and `firestore.rules`.
-   - Once you paste your Firebase keys in `firebase-config.js`, all data can seamlessly sync to Google Cloud Firestore collections!
+   - Server-side Firebase Admin SDK connects with `serviceAccountKey.json` or `FIREBASE_SERVICE_ACCOUNT` environment variable.
+   - Automatic real-time snapshot sync ensures dual persistence.

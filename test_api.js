@@ -131,7 +131,11 @@ async function runTests() {
 
   // 10. DELETE /api/orders/:id
   const deleteOrderRes = await fetchJson(`/api/orders/${createdOrderId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+      'x-admin-pin': 'alright@12',
+      Authorization: `Bearer ${loginRes.body.token || 'admin_test_token'}`
+    }
   });
   console.log("10. DELETE /api/orders/:id:", deleteOrderRes.status === 200 && deleteOrderRes.body.success ? "✅ PASSED" : "❌ FAILED");
 

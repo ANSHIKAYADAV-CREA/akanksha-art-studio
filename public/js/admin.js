@@ -129,6 +129,7 @@ const Admin = {
   isLoggedIn: false,
   currentTab: 'overview',
   knownPaidOrderIds: new Set(),
+  knownSettledOrderIds: new Set(),
   paymentPollerInterval: null,
 
   init() {
@@ -219,10 +220,19 @@ const Admin = {
       if (res && res.success) {
         this.isLoggedIn = true;
         sessionStorage.setItem('akamatoe_admin_auth', 'true');
+        if (res.token) {
+          sessionStorage.setItem('akanksha_admin_token', res.token);
+        }
+        sessionStorage.setItem('akanksha_admin_pin', pin);
+
         if (rememberCheckbox && rememberCheckbox.checked) {
           localStorage.setItem('akamatoe_admin_auth', 'true');
+          if (res.token) localStorage.setItem('akanksha_admin_token', res.token);
+          localStorage.setItem('akanksha_admin_pin', pin);
         } else {
           localStorage.removeItem('akamatoe_admin_auth');
+          localStorage.removeItem('akanksha_admin_token');
+          localStorage.removeItem('akanksha_admin_pin');
         }
 
         App.showToast('🌸 Welcome back to your Studio Dashboard, Akanksha!');
@@ -248,8 +258,13 @@ const Admin = {
 
   logout() {
     this.isLoggedIn = false;
+    this.stopLivePaymentMonitor();
     sessionStorage.removeItem('akamatoe_admin_auth');
+    sessionStorage.removeItem('akanksha_admin_token');
+    sessionStorage.removeItem('akanksha_admin_pin');
     localStorage.removeItem('akamatoe_admin_auth');
+    localStorage.removeItem('akanksha_admin_token');
+    localStorage.removeItem('akanksha_admin_pin');
     
     // Clear input
     const pinInput = document.getElementById('adminPinInput');
@@ -298,11 +313,19 @@ const Admin = {
   startLivePaymentMonitor() {
     if (this.paymentPollerInterval) return;
 
-    // Seed initial known paid orders
+    if (!this.knownPaidOrderIds) this.knownPaidOrderIds = new Set();
+    if (!this.knownSettledOrderIds) this.knownSettledOrderIds = new Set();
+
+    // Seed initial known paid and settled orders to prevent duplicate sound/toast notifications on initial login
     API.getOrders().then(res => {
       if (res && res.success && res.data) {
-        res.data.filter(o => o.paymentStatus === 'Paid').forEach(o => {
-          this.knownPaidOrderIds.add(o.id);
+        res.data.forEach(o => {
+          if (o.paymentStatus === 'Paid') {
+            this.knownPaidOrderIds.add(o.id);
+          }
+          if (o.settlementStatus === 'Settled to Bank') {
+            this.knownSettledOrderIds.add(o.id);
+          }
         });
       }
     }).catch(() => {});
@@ -312,27 +335,51 @@ const Admin = {
       try {
         const res = await API.getOrders();
         if (res && res.success && res.data) {
+          let hasUpdates = false;
+
+          // 1. Detect newly verified payments
           const paidOrders = res.data.filter(o => o.paymentStatus === 'Paid');
           for (const order of paidOrders) {
             if (!this.knownPaidOrderIds.has(order.id)) {
               this.knownPaidOrderIds.add(order.id);
-              // PLAY SOUNDBOX CHIME WHEN ADMIN RECEIVES PAYMENT!
+              // PLAY SOUNDBOX CHIME WHEN NEW PAYMENT VERIFICATION IS CONFIRMED!
               SoundFX.playPaymentChime(order.totalAmount);
-              App.showToast(`🔔 UPI Payment Received: ₹${Number(order.totalAmount || 0).toLocaleString('en-IN')} from ${order.customerName}!`);
-              // Auto-refresh active tab if orders or overview
-              const contentArea = document.getElementById('adminTabContent');
-              if (contentArea) {
-                if (this.currentTab === 'orders') {
-                  this.renderOrders(contentArea);
-                } else if (this.currentTab === 'overview') {
-                  this.renderOverview(contentArea);
-                }
+              App.showToast(`🟢 Payment Verified ✓: ₹${Number(order.totalAmount || 0).toLocaleString('en-IN')} for Order ${order.id}!`);
+              hasUpdates = true;
+            }
+          }
+
+          // 2. Detect newly settled payments (Bank payout confirmed)
+          const settledOrders = res.data.filter(o => o.settlementStatus === 'Settled to Bank');
+          for (const order of settledOrders) {
+            if (!this.knownSettledOrderIds.has(order.id)) {
+              this.knownSettledOrderIds.add(order.id);
+              App.showToast(`🏦 Settled to Bank ✓: Order ${order.id} (Ref: ${order.settlementReference || order.settlementId || 'Bank UTR'})!`);
+              hasUpdates = true;
+            }
+          }
+
+          // Auto-refresh active tab if orders or overview
+          if (hasUpdates) {
+            const contentArea = document.getElementById('adminTabContent');
+            if (contentArea) {
+              if (this.currentTab === 'orders') {
+                this.renderOrders(contentArea);
+              } else if (this.currentTab === 'overview') {
+                this.renderOverview(contentArea);
               }
             }
           }
         }
       } catch (e) {}
     }, 5000);
+  },
+
+  stopLivePaymentMonitor() {
+    if (this.paymentPollerInterval) {
+      clearInterval(this.paymentPollerInterval);
+      this.paymentPollerInterval = null;
+    }
   },
 
   async switchTab(tabName) {
@@ -1058,13 +1105,24 @@ const Admin = {
     const orders = res.data || [];
 
     const paidCount = orders.filter(o => o.paymentStatus === 'Paid').length;
+    const settledCount = orders.filter(o => o.settlementStatus === 'Settled to Bank').length;
+    const settlementPendingCount = orders.filter(o => o.paymentStatus === 'Paid' && o.settlementStatus !== 'Settled to Bank').length;
     const toPayCount = orders.filter(o => o.paymentStatus === 'To Pay' || (!o.paymentStatus && o.paymentMethod && o.paymentMethod.toLowerCase().includes('cash'))).length;
-    const issueCount = orders.filter(o => o.paymentStatus === 'Issue').length;
+    const issueCount = orders.filter(o => o.paymentStatus === 'Failed' || o.paymentStatus === 'Issue').length;
 
     container.innerHTML = `
       <div style="margin-bottom: 1.5rem;">
-        <h3 style="font-family: var(--font-serif); font-size: 1.5rem;">Customer Orders & Automated Payment Tracking</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">Real-time status for Paid, To Pay (COD), Payment Issues, and deliveries.</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+          <div>
+            <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.25rem;">Customer Orders & Automated Payment Tracking</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Real-time cryptographic payment verification and separate bank settlement confirmation.</p>
+          </div>
+          <div>
+            <button id="syncSettlementsBtn" class="btn btn-secondary btn-sm" onclick="Admin.syncSettlements()" style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600;">
+              🔄 Sync Razorpay Settlements
+            </button>
+          </div>
+        </div>
         
         <!-- Quick Stats Pill Row -->
         <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
@@ -1072,13 +1130,19 @@ const Admin = {
             📦 Total Orders: <strong>${orders.length}</strong>
           </div>
           <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
-            🟢 Paid: <strong>${paidCount}</strong>
+            🟢 Paid ✓: <strong>${paidCount}</strong>
+          </div>
+          <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
+            🟢 Settled to Bank ✓: <strong>${settledCount}</strong>
+          </div>
+          <div style="background: #fef3c7; border: 1px solid #fde68a; color: #b45309; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
+            ⏳ Settlement Pending: <strong>${settlementPendingCount}</strong>
           </div>
           <div style="background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
             💵 To Pay (COD): <strong>${toPayCount}</strong>
           </div>
           <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
-            ⚠️ Payment Issues: <strong>${issueCount}</strong>
+            ⚠️ Issues / Failed: <strong>${issueCount}</strong>
           </div>
         </div>
       </div>
@@ -1088,60 +1152,123 @@ const Admin = {
           <thead>
             <tr>
               <th>Order ID</th>
-              <th>Customer & Details</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Payment Mode & UTR</th>
+              <th>Customer</th>
+              <th>Items & Total</th>
+              <th>Gateway Ref</th>
               <th>Payment Status</th>
-              <th>Order Status</th>
+              <th>Bank Settlement Status</th>
+              <th>Fulfillment</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             ${orders.length === 0 ? `
               <tr>
-                <td colspan="7" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
+                <td colspan="8" style="text-align: center; padding: 3.5rem 1rem; color: var(--text-muted);">
                   <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📦</div>
                   <div style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">
                     No Customer Orders Yet
                   </div>
                   <p style="font-size: 0.85rem; max-width: 450px; margin: 0 auto; color: var(--text-muted);">
-                    When customers buy original paintings or store artifacts through UPI, Razorpay, or Cash on Delivery, their orders will appear here.
+                    When customers buy original paintings or store artifacts through Razorpay or Cash on Delivery, their verified payment and settlement records will appear here.
                   </p>
                 </td>
               </tr>
             ` : orders.map(o => `
               <tr>
-                <td><strong style="color: var(--color-pink-600);">${o.id}</strong></td>
+                <td>
+                  <strong style="color: var(--color-pink-600);">${o.id}</strong><br/>
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">${o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : ''}</span>
+                </td>
                 <td>
                   <strong>${o.customerName}</strong><br/>
                   <span style="font-size: 0.75rem; color: var(--text-light);">${o.phone} (${o.email || 'No email'})</span><br/>
-                  <span style="font-size: 0.72rem; color: var(--text-muted); display: block; max-width: 200px; white-space: normal;">${o.address || ''}</span>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); display: block; max-width: 180px; white-space: normal;">${o.address || ''}</span>
                 </td>
                 <td>
-                  <ul style="padding-left: 1rem; font-size: 0.8rem; margin: 0;">
+                  <ul style="padding-left: 1rem; font-size: 0.8rem; margin: 0 0 0.25rem 0;">
                     ${(o.items || []).map(i => `<li>${i.title} (&times;${i.quantity})</li>`).join('')}
                   </ul>
-                </td>
-                <td><strong>₹${(o.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
-                <td>
-                  <span style="font-size: 0.85rem; font-weight: 600;">${o.paymentMethod || 'N/A'}</span>
-                  ${o.paymentDetails?.utr ? `<br/><span style="font-size: 0.75rem; color: var(--text-muted);">UTR: <code style="color: var(--color-pink-600); font-family: var(--font-mono); font-weight: 700;">${o.paymentDetails.utr}</code></span>` : ''}
-                  ${o.paymentDetails?.reportedUtr ? `<br/><span style="font-size: 0.75rem; color: #dc2626;">Reported UTR: <code>${o.paymentDetails.reportedUtr}</code></span>` : ''}
+                  <strong style="color: var(--text-main); font-size: 0.9rem;">₹${(o.totalAmount || 0).toLocaleString('en-IN')}</strong>
                 </td>
                 <td>
-                  <select class="form-select" style="font-size: 0.78rem; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 700; width: auto; background: ${
-                    o.paymentStatus === 'Paid' ? '#dcfce7' : o.paymentStatus === 'To Pay' ? '#e0f2fe' : o.paymentStatus === 'Issue' ? '#fee2e2' : '#fef3c7'
-                  }; color: ${
-                    o.paymentStatus === 'Paid' ? '#15803d' : o.paymentStatus === 'To Pay' ? '#0369a1' : o.paymentStatus === 'Issue' ? '#b91c1c' : '#b45309'
-                  }; border: 1px solid rgba(0,0,0,0.08);" onchange="Admin.updateOrderPaymentStatus('${o.id}', this.value)">
-                    <option value="Paid" ${o.paymentStatus === 'Paid' ? 'selected' : ''}>🟢 Paid</option>
-                    <option value="To Pay" ${o.paymentStatus === 'To Pay' ? 'selected' : ''}>💵 To Pay</option>
-                    <option value="Issue" ${o.paymentStatus === 'Issue' ? 'selected' : ''}>⚠️ Issue</option>
-                    <option value="Not Yet" ${o.paymentStatus === 'Not Yet' ? 'selected' : ''}>⏳ Not Yet</option>
+                  <span style="font-size: 0.82rem; font-weight: 600;">${o.paymentMethod || 'Razorpay Gateway'}</span>
+                  ${(o.paymentId || o.paymentDetails?.razorpay_payment_id) ? `<br/><span style="font-size: 0.73rem; color: var(--text-muted);">Pay ID: <code style="color: var(--color-pink-600); font-family: var(--font-mono); font-weight: 700;">${o.paymentId || o.paymentDetails?.razorpay_payment_id}</code></span>` : ''}
+                  ${(o.razorpayOrderId || o.paymentDetails?.razorpay_order_id) ? `<br/><span style="font-size: 0.7rem; color: var(--text-light);">Order: <code>${o.razorpayOrderId || o.paymentDetails?.razorpay_order_id}</code></span>` : ''}
+                  ${o.paymentDetails?.utr ? `<br/><span style="font-size: 0.72rem; color: var(--text-muted);">UTR: <code style="font-weight: 600;">${o.paymentDetails.utr}</code></span>` : ''}
+                </td>
+                <td>
+                  ${o.paymentStatus === 'Paid' ? `
+                    <span class="table-badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      🟢 Paid ✓
+                    </span>
+                    <div style="font-size: 0.72rem; color: #166534; margin-top: 0.25rem;">
+                      ${o.paymentVerifiedAt ? 'Verified: ' + new Date(o.paymentVerifiedAt).toLocaleDateString('en-IN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Crypto HMAC'}
+                    </div>
+                  ` : o.paymentStatus === 'Failed' ? `
+                    <span class="table-badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      ❌ Failed
+                    </span>
+                    ${o.paymentDetails?.failureReason ? `<div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.2rem;">${o.paymentDetails.failureReason}</div>` : ''}
+                  ` : o.paymentStatus === 'To Pay' ? `
+                    <span class="table-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      💵 To Pay (COD)
+                    </span>
+                  ` : `
+                    <span class="table-badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      ⏳ Pending
+                    </span>
+                  `}
+                </td>
+                <td>
+                  ${o.settlementStatus === 'Settled to Bank' ? `
+                    <span class="table-badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      🟢 Settled to Bank ✓
+                    </span>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+                      Ref: <code style="font-family: var(--font-mono); color: var(--color-pink-600); font-weight: 700;">${o.settlementReference || o.settlementId || 'Confirmed'}</code>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-light);">
+                      ${(o.bankCreditConfirmedAt || o.settlementProcessedAt) ? '📅 ' + new Date(o.bankCreditConfirmedAt || o.settlementProcessedAt).toLocaleDateString('en-IN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Settlement ledger'}
+                    </div>
+                  ` : o.settlementStatus === 'Processing' ? `
+                    <span class="table-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      🔄 Processing
+                    </span>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Clearing to Bank</div>
+                  ` : o.settlementStatus === 'Failed or Reversed' ? `
+                    <span class="table-badge" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      ⚠️ Failed or Reversed
+                    </span>
+                  ` : (o.paymentStatus === 'Paid') ? `
+                    <span class="table-badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      ⏳ Settlement Pending
+                    </span>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Awaiting payout cycle</div>
+                  ` : `
+                    <span class="table-badge" style="background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      ⏳ Pending
+                    </span>
+                  `}
+                </td>
+                <td>
+                  <select class="form-select" style="font-size: 0.78rem; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; width: auto;" onchange="Admin.updateOrderStatus('${o.id}', this.value)">
+                    <option value="Confirmed" ${o.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                    <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                    <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                    <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                    <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                   </select>
                 </td>
                 <td>
-                  <span class="table-badge badge-confirmed">${o.status}</span>
+                  <button 
+                    class="btn-table-action btn-table-danger" 
+                    onclick="Admin.deleteOrder('${o.id}')"
+                    title="Delete order ${o.id} permanently from database & Cloudinary"
+                    style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;"
+                  >
+                    🗑️ Delete
+                  </button>
                 </td>
               </tr>
             `).join('')}
@@ -1151,22 +1278,75 @@ const Admin = {
     `;
   },
 
-  async updateOrderPaymentStatus(orderId, newStatus) {
+  async syncSettlements() {
+    const btn = document.getElementById('syncSettlementsBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Syncing Bank Settlements...';
+    }
+    App.showToast('⏳ Reconciling orders with Razorpay bank settlement ledger...');
+
     try {
-      const res = await API.updateOrder(orderId, { paymentStatus: newStatus });
-      if (res.success) {
-        if (newStatus === 'Paid') {
-          this.knownPaidOrderIds.add(orderId);
-          SoundFX.playPaymentChime();
-        }
-        App.showToast(`Order ${orderId} payment status updated to: ${newStatus}`);
-        const ordersTab = document.getElementById('adminTabContent');
-        if (ordersTab) this.renderOrders(ordersTab);
+      const res = await API.syncRazorpaySettlements();
+      if (res && res.success) {
+        App.showToast(`✅ ${res.message || 'Settlements reconciled successfully!'}`);
       } else {
-        App.showToast('Could not update order payment status.');
+        App.showToast(`ℹ️ ${(res && res.message) ? res.message : 'Settlement sync completed.'}`);
+      }
+      const ordersTab = document.getElementById('adminTabContent');
+      if (ordersTab && this.currentTab === 'orders') {
+        await this.renderOrders(ordersTab);
       }
     } catch (err) {
-      App.showToast('Error updating payment status');
+      console.error('Settlement sync error:', err);
+      App.showToast('❌ Settlement sync error: ' + (err.message || 'Failed to sync'));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Sync Razorpay Settlements';
+      }
+    }
+  },
+
+  async updateOrderStatus(orderId, newStatus) {
+    try {
+      const res = await API.updateOrder(orderId, { status: newStatus });
+      if (res && res.success) {
+        App.showToast(`✅ Order ${orderId} fulfillment set to: ${newStatus}`);
+      } else {
+        App.showToast('Could not update order status.');
+      }
+    } catch (err) {
+      App.showToast('Error updating order fulfillment status');
+    }
+  },
+
+  async deleteOrder(id) {
+    if (!confirm(`Are you sure you want to permanently delete order "${id}"?\n\nThis will remove the order from the database and permanently clean up any associated Cloudinary assets.`)) {
+      return;
+    }
+
+    try {
+      App.showToast('⏳ Deleting order from database & Cloudinary...');
+      const res = await API.deleteOrder(id);
+      if (!res.success) {
+        throw new Error(res.message || 'Failed to delete order');
+      }
+
+      if (this.knownPaidOrderIds && this.knownPaidOrderIds.has(id)) {
+        this.knownPaidOrderIds.delete(id);
+      }
+
+      App.showToast(`🗑️ Order ${id} deleted successfully!`);
+      const ordersTab = document.getElementById('adminTabContent');
+      if (ordersTab && this.currentTab === 'orders') {
+        await this.renderOrders(ordersTab);
+      } else if (ordersTab && this.currentTab === 'overview') {
+        await this.renderOverview(ordersTab);
+      }
+    } catch (err) {
+      console.error('Delete order error:', err);
+      App.showToast('❌ Could not delete order: ' + err.message);
     }
   },
 
@@ -1363,6 +1543,10 @@ const Admin = {
       if (msgEl) {
         msgEl.style.color = '#155724';
         msgEl.textContent = '✅ PIN updated successfully! Use your new credentials next time.';
+      }
+      sessionStorage.setItem('akanksha_admin_pin', newPin);
+      if (localStorage.getItem('akanksha_admin_pin')) {
+        localStorage.setItem('akanksha_admin_pin', newPin);
       }
       App.showToast('🔐 Admin PIN / Password updated successfully!');
       document.getElementById('newAdminPin').value = '';
