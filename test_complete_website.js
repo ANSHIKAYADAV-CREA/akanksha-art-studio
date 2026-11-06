@@ -1,4 +1,4 @@
-/**
+ /**
  * Complete Website & End-to-End Verification Suite for AKAMATOE
  * Validates:
  * 1. Static asset integrity (HTML, CSS, JS bundles)
@@ -131,7 +131,7 @@ async function runAllChecks() {
   require('./server/server.js');
 
   let ready = false;
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 40; i++) {
     try {
       const res = await request('/api/settings');
       if (res.status === 200 && res.body?.success) {

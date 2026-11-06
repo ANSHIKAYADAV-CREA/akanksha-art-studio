@@ -128,6 +128,7 @@ const API = {
   // Razorpay Gateway & Bank Settlement
   createRazorpayOrder: (data) => API.request('/api/razorpay/create-order', { method: 'POST', body: JSON.stringify(data) }),
   verifyRazorpayPayment: (data) => API.request('/api/razorpay/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+  recordRazorpayFailure: (data) => API.request('/api/razorpay/record-failure', { method: 'POST', body: JSON.stringify(data) }),
   syncRazorpaySettlements: () => API.request('/api/razorpay/sync-settlements', { method: 'POST' }),
 
 

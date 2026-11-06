@@ -774,9 +774,66 @@ app.delete('/api/reviews/:id', (req, res) => {
 // -------------------------------------------------------------
 // ORDERS & CHECKOUT API
 // -------------------------------------------------------------
+// List orders: full details with customer PII for Admin; sanitized public summary for non-admin
 app.get('/api/orders', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const pinHeader = req.headers['x-admin-pin'] || req.query?.pin || '';
   const db = readDB();
-  res.json({ success: true, data: db.orders || [] });
+  const currentPin = String(db.settings?.adminPin || 'alright@12').trim();
+
+  const isAuthorized = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+  if (isAuthorized) {
+    return res.json({ success: true, data: db.orders || [] });
+  }
+
+  // Security: redact customer PII (phone, email, delivery address, private notes) for unauthenticated queries
+  const sanitizedOrders = (db.orders || []).map(o => ({
+    id: o.id,
+    status: o.status,
+    paymentStatus: o.paymentStatus,
+    paymentMethod: o.paymentMethod,
+    paymentId: o.paymentId,
+    paymentVerifiedAt: o.paymentVerifiedAt,
+    settlementStatus: o.settlementStatus,
+    settlementReference: o.settlementReference,
+    totalAmount: o.totalAmount,
+    createdAt: o.createdAt
+  }));
+
+  res.json({ success: true, data: sanitizedOrders, sanitized: true });
+});
+
+// Single order safe lookup (for customer order confirmation & tracking)
+app.get('/api/orders/:id', (req, res) => {
+  const db = readDB();
+  const order = (db.orders || []).find(o => String(o.id) === String(req.params.id));
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  const authHeader = req.headers.authorization || '';
+  const pinHeader = req.headers['x-admin-pin'] || req.query?.pin || '';
+  const currentPin = String(db.settings?.adminPin || 'alright@12').trim();
+  const isAdmin = (authHeader.startsWith('Bearer ') && authHeader.length > 10) || (pinHeader === currentPin);
+
+  if (isAdmin) {
+    return res.json({ success: true, data: order });
+  }
+
+  // Safe sanitized order representation for customer confirmation screen
+  const safeOrder = {
+    id: order.id,
+    customerName: order.customerName,
+    items: order.items,
+    totalAmount: order.totalAmount,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    paymentId: order.paymentId,
+    status: order.status,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt
+  };
+  res.json({ success: true, data: safeOrder });
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -1104,7 +1161,13 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         });
       }
     } else {
-      console.warn('⚠️ RAZORPAY_KEY_SECRET not set; proceeding with server verification note.');
+      if (keyId && keyId.startsWith('rzp_live_')) {
+        return res.status(500).json({
+          success: false,
+          message: 'Security error: Live Razorpay payments strictly require RAZORPAY_KEY_SECRET on the server.'
+        });
+      }
+      console.warn('⚠️ RAZORPAY_KEY_SECRET not set; running in test/simulation verification mode.');
     }
 
     // 2. Fetch payment details directly from Razorpay API when available
@@ -1179,6 +1242,43 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
       success: false,
       message: 'Payment verification failed: ' + error.message
     });
+  }
+});
+
+// Record customer payment failure / cancellation without creating duplicate orders
+app.post('/api/razorpay/record-failure', async (req, res) => {
+  try {
+    const { orderId, reason, paymentDetails } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Missing orderId' });
+    }
+    const db = readDB();
+    const existing = (db.orders || []).find(o => String(o.id) === String(orderId));
+    if (existing) {
+      // Never overwrite an already paid order with a failure
+      if (existing.paymentStatus === 'Paid') {
+        return res.json({ success: true, message: 'Order is already marked Paid', data: existing });
+      }
+
+      const updated = {
+        ...existing,
+        paymentStatus: 'Failed',
+        status: 'Payment Failed',
+        notes: `${existing.notes || ''} [Payment Failed: ${reason || 'Transaction declined or cancelled'}]`.trim(),
+        paymentDetails: {
+          ...(existing.paymentDetails || {}),
+          ...(paymentDetails || {}),
+          failedAt: new Date().toISOString(),
+          failureReason: reason || 'Transaction declined or closed'
+        },
+        updatedAt: new Date().toISOString()
+      };
+      await saveItem('orders', updated);
+      return res.json({ success: true, message: 'Payment failure logged safely', data: updated });
+    }
+    res.status(404).json({ success: false, message: 'Order not found' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

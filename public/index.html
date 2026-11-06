@@ -713,17 +713,33 @@
             <label class="form-label">Payment Method</label>
             <select name="paymentMethod" class="form-select" id="checkoutPaymentMethodSelect" required>
               <option value="" disabled selected>-- Select Payment Method --</option>
-              <option value="UPI (Google Pay / PhonePe / Paytm)">UPI QR / Google Pay / PhonePe / Paytm (Instant QR)</option>
-              <option value="Cash on Delivery">Cash on Delivery (Pay in Cash upon Arrival)</option>
-              <option value="Credit / Debit Card">Credit / Debit Card (Online Gateway)</option>
-              <option value="Net Banking">Net Banking (Online Gateway)</option>
+              <option value="Razorpay Secure Gateway (Cards, UPI, Net Banking)">⚡ Razorpay Secure Gateway (Cards, UPI, Net Banking, Wallets) [Instant Online Verification]</option>
+              <option value="Direct Artist UPI QR">📱 Direct Studio UPI QR (Scan & Pay)</option>
+              <option value="Cash on Delivery">💵 Cash on Delivery (Pay in Cash upon Arrival)</option>
             </select>
           </div>
         </div>
 
         <!-- PAYMENT METHOD INFO BANNER (Explains next step based on selection) -->
         <div id="checkoutPaymentDetailsWrapper" style="display: none; margin-bottom: 1.25rem;">
-          <!-- UPI Note -->
+          <!-- Gateway Note -->
+          <div id="checkoutCardBox" style="
+            display: none;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #3b82f6;
+            padding: 0.9rem 1.15rem;
+            border-radius: var(--radius-md);
+          ">
+            <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+              <span>🔒</span> Official Razorpay Gateway
+            </div>
+            <p id="checkoutCardText" style="font-size: 0.82rem; color: #1e40af; margin: 0; line-height: 1.4;">
+              Encrypted Razorpay checkout modal will launch to securely pay via UPI, Credit/Debit Card, Net Banking, or Wallets with instant cryptographic confirmation.
+            </p>
+          </div>
+
+          <!-- Direct UPI Note -->
           <div id="checkoutUpiNotice" style="
             display: none;
             background: var(--color-pink-50);
@@ -733,7 +749,7 @@
             font-size: 0.85rem;
             color: var(--color-pink-700);
           ">
-            📱 <strong>UPI QR Payment:</strong> Once you click below, the dynamic studio QR code will appear with automated verification to confirm your payment!
+            📱 <strong>Studio UPI QR:</strong> The studio dynamic QR code will appear on screen for direct bank app scanning.
           </div>
 
           <!-- COD Note -->
@@ -750,23 +766,6 @@
             </div>
             <p id="checkoutCodText" style="font-size: 0.82rem; color: #475569; margin: 0; line-height: 1.4;">
               No advance payment needed! You can pay cash or UPI to the courier partner upon parcel delivery.
-            </p>
-          </div>
-
-          <!-- Card / NetBanking Note -->
-          <div id="checkoutCardBox" style="
-            display: none;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-left: 4px solid #3b82f6;
-            padding: 0.9rem 1.15rem;
-            border-radius: var(--radius-md);
-          ">
-            <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-              <span>🔒</span> Secure Gateway Payment
-            </div>
-            <p id="checkoutCardText" style="font-size: 0.82rem; color: #1e40af; margin: 0; line-height: 1.4;">
-              Encrypted Razorpay card & net banking checkout will launch securely when you proceed.
             </p>
           </div>
         </div>
@@ -804,12 +803,37 @@
         </div>
       </div>
 
-      <!-- MAIN PAYMENT PRESENTATION: ONLY QR CODE VISIBLE -->
+      <!-- MAIN PAYMENT PRESENTATION: QR CODE WITH IN-PLACE TICK CONFIRMATION -->
       <div id="checkoutStep2QrContainer" style="background: var(--color-pink-50); border: 1.5px dashed var(--color-pink-400); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; text-align: center; transition: all 0.4s ease;">
         
-        <!-- The center box where QR code displays -->
-        <div id="checkoutCenterMorphBox" style="width: 220px; height: 220px; margin: 0 auto; background: white; padding: 12px; border-radius: 16px; border: 1.5px solid var(--border-pink); box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.4s ease;">
-          <img id="checkoutStep2Qr" src="" alt="UPI Payment QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
+        <!-- The center box where QR code displays and morphs into a Tick upon payment -->
+        <div id="checkoutCenterMorphBox" title="Tap after paying" style="width: 220px; height: 220px; margin: 0 auto; background: white; padding: 12px; border-radius: 16px; border: 1.5px solid var(--border-pink); box-shadow: 0 6px 18px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.4s ease; cursor: pointer;">
+          
+          <!-- State 1: Active QR Code -->
+          <img id="checkoutStep2Qr" src="" alt="UPI Payment QR Code" style="width: 100%; height: 100%; object-fit: contain; transition: opacity 0.3s ease;" />
+          
+          <!-- State 2: Verified Tick (Replaces QR code in exact same place!) -->
+          <div id="checkoutBlueTickBox" style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center;">
+            <div class="blue-tick-circle" style="width: 82px; height: 82px; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35);">
+              ✓
+            </div>
+            <div style="margin-top: 0.65rem; font-size: 0.95rem; font-weight: 800; color: #15803d; letter-spacing: 0.5px;">
+              PAID &amp; VERIFIED ✓
+            </div>
+            <div style="font-size: 0.75rem; color: #166534; margin-top: 0.25rem; font-weight: 600;">
+              Returning to gallery...
+            </div>
+          </div>
+        </div>
+
+        <!-- Action trigger: Tap after paying -->
+        <div style="margin-top: 1.25rem;">
+          <button type="button" id="confirmPaymentPaidBtn" class="btn btn-primary" style="width: 100%; max-width: 280px; padding: 0.75rem 1.25rem; font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); border: none; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25); display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; border-radius: 999px;">
+            ✓ I Have Paid (Confirm &amp; Return)
+          </button>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.45rem; margin-bottom: 0;">
+            Tap the button or QR code after completing payment
+          </p>
         </div>
 
       </div>

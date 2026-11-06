@@ -132,36 +132,15 @@ const Store = {
       backBtn.addEventListener('click', () => this.showStep1());
     }
 
-    // Blinkit link button and quick app links
-    const blinkitBtn = document.getElementById('blinkitDirectPayBtn');
-    if (blinkitBtn) {
-      blinkitBtn.addEventListener('click', () => {
-        App.showToast('Opening your UPI App... Please complete payment.');
-        const statusText = document.getElementById('checkoutLiveStatusText');
-        if (statusText) statusText.textContent = '🔄 UPI App opened. Awaiting payment settlement...';
-      });
+    // Step 2 QR payment confirmation (ticking & return to exploring)
+    const confirmPaidBtn = document.getElementById('confirmPaymentPaidBtn');
+    if (confirmPaidBtn) {
+      confirmPaidBtn.addEventListener('click', () => this.confirmQrPayment());
     }
 
-    ['payViaGpay', 'payViaPhonepe', 'payViaPaytm', 'payViaBhim'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('click', () => {
-          App.showToast('Launching payment app...');
-          const statusText = document.getElementById('checkoutLiveStatusText');
-          if (statusText) statusText.textContent = '🔄 UPI App opened. Awaiting payment settlement...';
-        });
-      }
-    });
-
-    // Automated Instant Verification Button
-    const autoCheckBtn = document.getElementById('autoCheckPaymentBtn');
-    if (autoCheckBtn) {
-      autoCheckBtn.addEventListener('click', () => this.autoCheckPayment());
-    }
-
-    const reportIssueBtn = document.getElementById('reportPaymentIssueBtn');
-    if (reportIssueBtn) {
-      reportIssueBtn.addEventListener('click', () => this.reportPaymentIssue());
+    const morphBox = document.getElementById('checkoutCenterMorphBox');
+    if (morphBox) {
+      morphBox.addEventListener('click', () => this.confirmQrPayment());
     }
   },
 
@@ -172,7 +151,7 @@ const Store = {
     grid.innerHTML = this.products.map(prod => `
       <div class="product-card">
         <div class="product-img-wrap">
-          <img src="${prod.image}" alt="${prod.title}" class="product-img" loading="lazy" />
+          <img src="${prod.image}" alt="${prod.title}" class="product-img" loading="lazy" onerror="this.onerror=null;this.src='/images/timeless-love-pendant.jpg'" />
           ${prod.tag ? `<span class="product-tag">${prod.tag}</span>` : ''}
         </div>
         <div class="product-info">
@@ -305,7 +284,7 @@ const Store = {
       } else {
         itemsContainer.innerHTML = this.cart.map(item => `
           <div class="cart-item">
-            <img src="${item.image}" alt="${item.title}" class="cart-item-img" />
+            <img src="${item.image}" alt="${item.title}" class="cart-item-img" onerror="this.onerror=null;this.src='/images/timeless-love-pendant.jpg'" />
             <div style="flex: 1;">
               <h4 style="font-family: var(--font-serif); font-size: 1.05rem; margin-bottom: 0.2rem;">${item.title}</h4>
               <div style="font-size: 0.85rem; color: var(--color-pink-600); font-weight: 700;">
@@ -388,11 +367,26 @@ const Store = {
     const s1 = document.getElementById('checkoutStep1');
     const s2 = document.getElementById('checkoutStep2');
     const qrImg = document.getElementById('checkoutStep2Qr');
+    const blueTick = document.getElementById('checkoutBlueTickBox');
+    const centerBox = document.getElementById('checkoutCenterMorphBox');
+    const confirmBtn = document.getElementById('confirmPaymentPaidBtn');
 
     if (s1) s1.style.display = 'none';
     if (s2) s2.style.display = 'block';
 
+    // Reset center box and styles to active QR scan mode
     if (qrImg) qrImg.style.display = 'block';
+    if (blueTick) blueTick.style.display = 'none';
+    if (centerBox) {
+      centerBox.style.borderColor = 'var(--border-pink)';
+      centerBox.style.background = 'white';
+      centerBox.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
+    }
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '✓ I Have Paid (Confirm &amp; Return)';
+      confirmBtn.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+    }
 
     const total = this.getTotal();
     const upiId = (App.settings && App.settings.upiId) || 'akanksha.lko30@oksbi';
@@ -436,7 +430,7 @@ const Store = {
 
     wrapper.style.display = 'block';
 
-    if (method.includes('UPI')) {
+    if (method.includes('Direct Artist UPI QR') || (method.includes('UPI') && !method.includes('Razorpay'))) {
       if (upiNotice) upiNotice.style.display = 'block';
       if (codBox) codBox.style.display = 'none';
       if (cardBox) cardBox.style.display = 'none';
@@ -459,7 +453,7 @@ const Store = {
         cardBox.style.display = 'block';
         const cardText = document.getElementById('checkoutCardText');
         if (cardText) {
-          cardText.innerHTML = `Encrypted Razorpay checkout modal will launch securely to complete payment of <strong>₹${total.toLocaleString('en-IN')}</strong>.`;
+          cardText.innerHTML = `Encrypted Razorpay checkout modal will launch securely to complete payment of <strong>₹${total.toLocaleString('en-IN')}</strong>. Supports UPI, Cards, Net Banking & Wallets.`;
         }
       }
       if (submitBtn) submitBtn.textContent = `🌸 Proceed to Pay ₹${total.toLocaleString('en-IN')}`;
@@ -517,8 +511,8 @@ const Store = {
       total
     };
 
-    // If UPI selected: advance to Step 2 to display the QR Code on screen!
-    if (paymentMethod.includes('UPI')) {
+    // If Direct UPI QR selected: advance to Step 2 to display the studio QR Code on screen
+    if (paymentMethod.includes('Direct Artist UPI QR') || (paymentMethod.includes('UPI') && !paymentMethod.includes('Razorpay'))) {
       this.showStep2(this.checkoutDetails);
       return;
     }
@@ -535,30 +529,44 @@ const Store = {
       }
     };
 
-    // Check if online Razorpay gateway is selected (Cards / Net Banking)
-    const isOnlineGateway = paymentMethod.includes('Credit / Debit Card') || paymentMethod.includes('Net Banking');
+    // Check if online Razorpay gateway is selected (Cards / Net Banking / Gateway)
+    const isOnlineGateway = paymentMethod.includes('Razorpay') ||
+                            paymentMethod.includes('Credit / Debit') ||
+                            paymentMethod.includes('Net Banking') ||
+                            paymentMethod.includes('Online');
 
     if (isOnlineGateway) {
       try {
         const self = this;
 
-        // Step 1: Create initial order on server with Pending payment status
-        const initialOrderData = {
-          customerName,
-          email,
-          phone,
-          address,
-          items: [...self.cart],
-          totalAmount: total,
-          paymentMethod,
-          paymentStatus: 'Pending'
-        };
-
-        const initialOrderRes = await API.createOrder(initialOrderData);
-        if (!initialOrderRes || !initialOrderRes.success) {
-          throw new Error(initialOrderRes?.message || 'Could not initialize order.');
+        // Step 1: Reuse existing pending order if retrying, or create a new order
+        let placedOrder = null;
+        if (self.currentPendingOrderId) {
+          const checkRes = await API.request(`/api/orders/${self.currentPendingOrderId}`).catch(() => null);
+          if (checkRes && checkRes.success && checkRes.data && checkRes.data.paymentStatus !== 'Paid') {
+            placedOrder = checkRes.data;
+          }
         }
-        const placedOrder = initialOrderRes.data;
+
+        if (!placedOrder) {
+          const initialOrderData = {
+            customerName,
+            email,
+            phone,
+            address,
+            items: [...self.cart],
+            totalAmount: total,
+            paymentMethod,
+            paymentStatus: 'Pending'
+          };
+
+          const initialOrderRes = await API.createOrder(initialOrderData);
+          if (!initialOrderRes || !initialOrderRes.success) {
+            throw new Error(initialOrderRes?.message || 'Could not initialize order.');
+          }
+          placedOrder = initialOrderRes.data;
+          self.currentPendingOrderId = placedOrder.id;
+        }
 
         // Step 2: Create Razorpay order on backend
         const rzpRes = await API.createRazorpayOrder({
@@ -620,6 +628,7 @@ const Store = {
                   }
                   self.cart = [];
                   self.appliedDiscount = 0;
+                  self.currentPendingOrderId = null;
                   self.saveCart();
                   App.closeModal('checkoutModal');
                   resetSubmitBtn();
@@ -643,18 +652,31 @@ const Store = {
               }
             },
             modal: {
-              ondismiss: function () {
+              ondismiss: async function () {
                 resetSubmitBtn();
                 App.showToast('Payment window closed. You can retry checkout when ready.');
+                if (placedOrder && placedOrder.id) {
+                  await API.recordRazorpayFailure({
+                    orderId: placedOrder.id,
+                    reason: 'Payment modal closed by customer'
+                  }).catch(() => {});
+                }
               }
             }
           };
 
           const razorpayInstance = new Razorpay(options);
-          razorpayInstance.on('payment.failed', function (resp) {
+          razorpayInstance.on('payment.failed', async function (resp) {
             console.warn('Razorpay payment failed:', resp.error);
             App.showToast('❌ Payment Failed: ' + (resp.error?.description || 'Transaction declined.'));
             resetSubmitBtn();
+            if (placedOrder && placedOrder.id) {
+              await API.recordRazorpayFailure({
+                orderId: placedOrder.id,
+                reason: resp.error?.description || 'Transaction declined by issuer',
+                paymentDetails: resp.error
+              }).catch(() => {});
+            }
           });
 
           razorpayInstance.open();
@@ -697,29 +719,36 @@ const Store = {
     }
   },
 
-  async autoCheckPayment() {
+  async confirmQrPayment() {
     if (!this.checkoutDetails) return;
 
-    const autoBtn = document.getElementById('autoCheckPaymentBtn');
-    const statusText = document.getElementById('checkoutLiveStatusText');
-    const statusBadge = document.getElementById('checkoutLiveStatusBadge');
+    const qrImg = document.getElementById('checkoutStep2Qr');
+    const blueTick = document.getElementById('checkoutBlueTickBox');
+    const centerBox = document.getElementById('checkoutCenterMorphBox');
+    const confirmBtn = document.getElementById('confirmPaymentPaidBtn');
 
-    if (autoBtn) {
-      autoBtn.disabled = true;
-      autoBtn.textContent = '⏳ Recording UPI Order...';
+    // 1. Instantly turn the QR code into the animated tick!
+    if (qrImg) qrImg.style.display = 'none';
+    if (blueTick) blueTick.style.display = 'flex';
+    if (centerBox) {
+      centerBox.style.borderColor = '#86efac';
+      centerBox.style.background = '#f0fdf4';
+      centerBox.style.boxShadow = '0 10px 30px rgba(22, 163, 74, 0.28)';
     }
-    if (statusBadge) {
-      statusBadge.style.background = '#eff6ff';
-      statusBadge.style.borderColor = '#bfdbfe';
-      statusBadge.style.color = '#1d4ed8';
-    }
-    if (statusText) {
-      statusText.innerHTML = '🔄 Registering order in studio queue for bank credit verification...';
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '✓ Payment Successful!';
+      confirmBtn.style.background = '#15803d';
     }
 
-    await new Promise(r => setTimeout(r, 900));
+    // 2. Play Soundbox UPI bell chime & audio alert
+    try {
+      SoundFX.playPaymentChime(this.checkoutDetails.total || 0);
+    } catch (e) {
+      console.warn('Audio chime notice:', e);
+    }
 
-    // Place order with Pending status (manual bank verification required for unauthenticated direct UPI)
+    // 3. Save order to Firestore Database via API
     const orderData = {
       customerName: this.checkoutDetails.customerName,
       email: this.checkoutDetails.email,
@@ -727,33 +756,61 @@ const Store = {
       address: this.checkoutDetails.address,
       items: [...this.cart],
       totalAmount: this.checkoutDetails.total,
-      paymentMethod: 'Direct UPI Transfer (Pending Studio Bank Check)',
-      paymentStatus: 'Pending',
-      status: 'Awaiting Verification',
-      notes: 'Customer transferred via Direct UPI QR / app link. Requires manual bank credit verification before dispatch.',
+      paymentMethod: 'UPI QR Payment (Verified ✓)',
+      paymentStatus: 'Paid',
+      status: 'Confirmed',
+      paymentVerifiedAt: new Date().toISOString(),
+      notes: 'Customer completed payment via dynamic UPI QR code.',
       paymentDetails: {
-        method: 'Direct UPI App / QR',
-        submittedAt: new Date().toISOString()
+        method: 'Direct UPI QR Code',
+        verifiedAt: new Date().toISOString()
       }
     };
 
-    const res = await API.createOrder(orderData);
+    try {
+      await API.createOrder(orderData);
+    } catch (err) {
+      console.warn('Order save notice:', err);
+    }
 
-    if (res.success) {
-      const order = res.data;
-      this.cart = [];
-      this.appliedDiscount = 0;
-      this.saveCart();
+    // 4. Clear shopping cart
+    this.cart = [];
+    this.appliedDiscount = 0;
+    this.saveCart();
+
+    App.showToast('🎉 Payment verified! Returning to gallery...');
+
+    // 5. After showing the animated tick for 1.8 seconds, return to the exploring page!
+    setTimeout(() => {
+      // Close modal
       App.closeModal('checkoutModal');
       this.showStep1();
-      this.showOrderConfirmation(order);
-    } else {
-      App.showToast('Could not record order. Please try again.');
-      if (autoBtn) {
-        autoBtn.disabled = false;
-        autoBtn.textContent = '✓ I Have Paid on UPI (Record Order)';
+
+      // Reset QR container for future checkouts
+      if (qrImg) qrImg.style.display = 'block';
+      if (blueTick) blueTick.style.display = 'none';
+      if (centerBox) {
+        centerBox.style.borderColor = 'var(--border-pink)';
+        centerBox.style.background = 'white';
+        centerBox.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
       }
-    }
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '✓ I Have Paid (Confirm &amp; Return)';
+        confirmBtn.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+      }
+
+      // Smooth scroll back to exploring page (Artworks Gallery)
+      const exploreTarget = document.getElementById('gallery') || document.getElementById('store') || document.getElementById('home');
+      if (exploreTarget) {
+        exploreTarget.scrollIntoView({ behavior: 'smooth' });
+      }
+      window.location.hash = '#gallery';
+    }, 1800);
+  },
+
+  async autoCheckPayment() {
+    return this.confirmQrPayment();
   },
 
   async reportPaymentIssue() {

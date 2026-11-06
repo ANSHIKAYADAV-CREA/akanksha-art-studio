@@ -3,7 +3,7 @@
     "email": "tintedtales16@gmail.com",
     "phone": "9517155681",
     "instagramPrimary": "@_akanxha",
-    "instagramSecondary": "@psychotichic",
+    "instagramSecondary": "@_.tintedtales",
     "bioQuote": "A young artist driven by the desire to create a colourful canvas of life. I welcome you to my little corner, where you can explore my work, discover the stories woven into every creation, and become a part of this ever-evolving journey of expression.",
     "bioSubtitle": "Exploring the delicate intersection of emotion, raw pigment, poetry, and transient human connection across Delhi & beyond.",
     "announcement": "🌸 Welcoming Custom Commissions & Studio Art Orders • Free Shipping Across India ✨",
@@ -20,7 +20,7 @@
     "bookingFeatureTitle": "Ethereal Fest & Editorial Look",
     "bookingFeatureSubtitle": "Hand-painted bespoke motifs created by Akanksha for university fests and cultural gatherings.",
     "upiLink": "upi://pay?pa=akanksha.lko30@oksbi&pn=AKAMATOE%20Studio&cu=INR",
-    "qrUrl": "",
+    "qrUrl": "https://res.cloudinary.com/wempi94r/image/upload/v1792418946/akanksha-art-studio/neoxofqmasiadg8i5j7i.jpg",
     "updatedAt": "2026-10-18T12:33:46.423Z"
   },
   "artworks": [
@@ -148,7 +148,6 @@
   ],
   "products": [
     {
-      "image": "https://res.cloudinary.com/wempi94r/image/upload/v1788466491/akanksha-art-studio/uxug1yykgnajrfyczmyw.jpg",
       "originalPrice": 1299,
       "price": 1299,
       "rating": 5,
@@ -158,7 +157,8 @@
       "category": "Wearable Art",
       "stock": 10,
       "title": "Timeless love ",
-      "publicId": "akanksha-art-studio/uxug1yykgnajrfyczmyw"
+      "image": "/images/timeless-love-pendant.jpg",
+      "publicId": ""
     }
   ],
   "bookings": [
@@ -172,6 +172,34 @@
       "location": "Delhi University Campus",
       "eventType": "Fest & Cultural Gathering",
       "id": "BK-1194",
+      "clientPhone": "+91 98777 22222",
+      "eventDate": "2026-11-20",
+      "status": "Pending"
+    },
+    {
+      "createdAt": "2026-11-06T06:36:16.753Z",
+      "notes": "Floral motifs",
+      "clientEmail": "sanya@example.com",
+      "clientName": "Sanya Gupta",
+      "timeSlot": "Afternoon (2:00 PM - 5:00 PM)",
+      "guestCount": 35,
+      "location": "Delhi University Campus",
+      "eventType": "Fest & Cultural Gathering",
+      "id": "BK-2392",
+      "clientPhone": "+91 98777 22222",
+      "eventDate": "2026-11-20",
+      "status": "Pending"
+    },
+    {
+      "createdAt": "2026-11-06T06:34:53.083Z",
+      "notes": "Floral motifs",
+      "clientEmail": "sanya@example.com",
+      "clientName": "Sanya Gupta",
+      "timeSlot": "Afternoon (2:00 PM - 5:00 PM)",
+      "guestCount": 35,
+      "location": "Delhi University Campus",
+      "eventType": "Fest & Cultural Gathering",
+      "id": "BK-9622",
       "clientPhone": "+91 98777 22222",
       "eventDate": "2026-11-20",
       "status": "Pending"
@@ -261,9 +289,56 @@
       "comment": "The Lord Krishna painting is deeply divine and brings serenity to our home.",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
       "id": "rev-mvdjufo4-n9kp"
+    },
+    {
+      "date": "Just now",
+      "approved": true,
+      "role": "Art Enthusiast",
+      "name": "Dr. Anita Roy",
+      "rating": 5,
+      "verified": true,
+      "comment": "The Lord Krishna painting is deeply divine and brings serenity to our home.",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      "id": "rev-mw4lntwl-myef"
     }
   ],
   "orders": [
+    {
+      "address": "Flat 304, Green Park, New Delhi",
+      "notes": "",
+      "customerName": "Kunal Roy",
+      "createdAt": "2026-11-06T06:36:18.300Z",
+      "totalAmount": 1500,
+      "phone": "+91 98100 55443",
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-1085",
+      "items": [
+        {
+          "id": "prod-1",
+          "title": "Serenity Print",
+          "price": 1500,
+          "quantity": 1
+        }
+      ],
+      "email": "kunal.roy@example.com",
+      "paymentVerifiedAt": "2026-11-06T06:36:20.302Z",
+      "paymentId": "pay_fullcheck_1793946980233",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:36:20.302Z",
+        "razorpay_order_id": "order_1793946980231_4665",
+        "razorpay_payment_id": "pay_fullcheck_1793946980233"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_1793946980231_4665",
+      "status": "Confirmed",
+      "settlementId": "setl_fullcheck_999",
+      "settlementStatus": "Settled to Bank",
+      "settlementReference": "UTR_ICICI_2026101899",
+      "settlementProcessedAt": "2026-11-06T06:36:20.000Z",
+      "bankCreditConfirmedAt": "2026-11-06T06:36:20.000Z",
+      "updatedAt": "2026-11-06T06:36:20.841Z"
+    },
     {
       "address": "p3/2 new police linjnfwefbhgshjfgjsd",
       "notes": "Customer transferred via Direct UPI QR / app link. Requires manual bank credit verification before dispatch.",
@@ -381,6 +456,41 @@
       "status": "Processing"
     },
     {
+      "address": "77 Marine Drive, Mumbai",
+      "notes": "",
+      "paymentVerifiedAt": null,
+      "settlementProcessedAt": null,
+      "settlementId": null,
+      "customerName": "Kabir Khan",
+      "createdAt": "2026-11-06T06:35:24.347Z",
+      "totalAmount": 3200,
+      "phone": "+91 97777 66554",
+      "settlementStatus": "Pending",
+      "settlementReference": null,
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-1649",
+      "items": [
+        {
+          "id": "prod-3",
+          "title": "Abstract Light",
+          "price": 3200,
+          "quantity": 1
+        }
+      ],
+      "email": "kabir@example.com",
+      "razorpayOrderId": null,
+      "bankCreditConfirmedAt": null,
+      "paymentId": "pay_failed_sample_123",
+      "paymentDetails": {
+        "failedAt": "2026-11-06T06:35:24.468Z",
+        "failureCode": "BAD_REQUEST_ERROR",
+        "failureReason": "Payment was cancelled by the user."
+      },
+      "paymentStatus": "Failed",
+      "status": "Shipped",
+      "updatedAt": "2026-11-06T06:35:24.614Z"
+    },
+    {
       "address": "New Police Laine\nP3/2",
       "notes": "",
       "customerName": "Shahendra Kumar Yadav",
@@ -407,6 +517,42 @@
       "email": "shahendrayadav20780@gmail.com",
       "paymentStatus": "Paid",
       "status": "Processing"
+    },
+    {
+      "address": "Flat 304, Green Park, New Delhi",
+      "notes": "",
+      "customerName": "Kunal Roy",
+      "createdAt": "2026-11-06T06:34:53.355Z",
+      "totalAmount": 1500,
+      "phone": "+91 98100 55443",
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-2156",
+      "items": [
+        {
+          "id": "prod-1",
+          "title": "Serenity Print",
+          "price": 1500,
+          "quantity": 1
+        }
+      ],
+      "email": "kunal.roy@example.com",
+      "paymentVerifiedAt": "2026-11-06T06:34:54.196Z",
+      "paymentId": "pay_fullcheck_1793946894124",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:34:54.196Z",
+        "razorpay_order_id": "order_1793946894122_4099",
+        "razorpay_payment_id": "pay_fullcheck_1793946894124"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_1793946894122_4099",
+      "status": "Confirmed",
+      "settlementId": "setl_fullcheck_999",
+      "settlementStatus": "Settled to Bank",
+      "settlementReference": "UTR_ICICI_2026101899",
+      "settlementProcessedAt": "2026-11-06T06:34:54.000Z",
+      "bankCreditConfirmedAt": "2026-11-06T06:34:54.000Z",
+      "updatedAt": "2026-11-06T06:34:54.561Z"
     },
     {
       "address": "kanpur",
@@ -461,6 +607,149 @@
       "status": "Processing"
     },
     {
+      "address": "77 Marine Drive, Mumbai",
+      "notes": "",
+      "paymentVerifiedAt": null,
+      "settlementProcessedAt": null,
+      "settlementId": null,
+      "customerName": "Kabir Khan",
+      "createdAt": "2026-11-06T06:36:02.596Z",
+      "totalAmount": 3200,
+      "phone": "+91 97777 66554",
+      "settlementStatus": "Pending",
+      "settlementReference": null,
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-5639",
+      "items": [
+        {
+          "id": "prod-3",
+          "title": "Abstract Light",
+          "price": 3200,
+          "quantity": 1
+        }
+      ],
+      "email": "kabir@example.com",
+      "razorpayOrderId": null,
+      "bankCreditConfirmedAt": null,
+      "paymentId": "pay_failed_sample_123",
+      "paymentDetails": {
+        "failedAt": "2026-11-06T06:36:02.741Z",
+        "failureCode": "BAD_REQUEST_ERROR",
+        "failureReason": "Payment was cancelled by the user."
+      },
+      "paymentStatus": "Failed",
+      "status": "Shipped",
+      "updatedAt": "2026-11-06T06:36:02.896Z"
+    },
+    {
+      "address": "54 Lake View, Bangalore",
+      "notes": "",
+      "customerName": "Priya Patel",
+      "createdAt": "2026-11-06T06:36:01.817Z",
+      "totalAmount": 1500,
+      "phone": "+91 99888 77665",
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-5913",
+      "items": [
+        {
+          "id": "prod-2",
+          "title": "Serenity Print",
+          "price": 1500,
+          "quantity": 1
+        }
+      ],
+      "email": "priya@example.com",
+      "paymentVerifiedAt": "2026-11-06T06:36:01.954Z",
+      "paymentId": "pay_closed_browser_001",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:36:01.954Z",
+        "razorpay_order_id": "order_closed_browser_001",
+        "razorpay_payment_id": "pay_closed_browser_001"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_closed_browser_001",
+      "status": "Confirmed",
+      "settlementId": "setl_test_bank_8899",
+      "settlementStatus": "Settled to Bank",
+      "settlementReference": "UTR_HDFC_9988776655",
+      "settlementProcessedAt": "2026-11-06T06:36:02.000Z",
+      "bankCreditConfirmedAt": "2026-11-06T06:36:02.000Z",
+      "updatedAt": "2026-11-06T06:36:02.463Z"
+    },
+    {
+      "address": "54 Lake View, Bangalore",
+      "notes": "",
+      "customerName": "Priya Patel",
+      "createdAt": "2026-11-06T06:35:23.593Z",
+      "totalAmount": 1500,
+      "phone": "+91 99888 77665",
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-6163",
+      "items": [
+        {
+          "id": "prod-2",
+          "title": "Serenity Print",
+          "price": 1500,
+          "quantity": 1
+        }
+      ],
+      "email": "priya@example.com",
+      "paymentVerifiedAt": "2026-11-06T06:35:23.731Z",
+      "paymentId": "pay_closed_browser_001",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:35:23.731Z",
+        "razorpay_order_id": "order_closed_browser_001",
+        "razorpay_payment_id": "pay_closed_browser_001"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_closed_browser_001",
+      "status": "Confirmed",
+      "settlementId": "setl_test_bank_8899",
+      "settlementStatus": "Settled to Bank",
+      "settlementReference": "UTR_HDFC_9988776655",
+      "settlementProcessedAt": "2026-11-06T06:35:24.000Z",
+      "bankCreditConfirmedAt": "2026-11-06T06:35:24.000Z",
+      "updatedAt": "2026-11-06T06:35:24.169Z"
+    },
+    {
+      "address": "22 Park Street, Delhi",
+      "notes": "Handle with care",
+      "settlementProcessedAt": null,
+      "settlementId": null,
+      "customerName": "Aarav Sharma",
+      "createdAt": "2026-11-06T06:35:22.848Z",
+      "totalAmount": 2500,
+      "phone": "+91 98111 22233",
+      "settlementStatus": "Pending",
+      "settlementReference": null,
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-6415",
+      "items": [
+        {
+          "id": "prod-1",
+          "title": "Cosmic Bloom Canvas",
+          "price": 2500,
+          "quantity": 1
+        }
+      ],
+      "email": "aarav@example.com",
+      "bankCreditConfirmedAt": null,
+      "paymentVerifiedAt": "2026-11-06T06:35:23.430Z",
+      "paymentId": "pay_test_112233",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:35:23.430Z",
+        "razorpay_order_id": "order_test_998877",
+        "razorpay_payment_id": "pay_test_112233"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_test_998877",
+      "status": "Confirmed",
+      "updatedAt": "2026-11-06T06:35:23.430Z"
+    },
+    {
       "address": "Pg",
       "notes": "",
       "customerName": "Akanksha",
@@ -483,6 +772,42 @@
       "email": "akanshalps0@gmail.com",
       "paymentStatus": "Not Yet",
       "status": "Processing"
+    },
+    {
+      "address": "22 Park Street, Delhi",
+      "notes": "Handle with care",
+      "settlementProcessedAt": null,
+      "settlementId": null,
+      "customerName": "Aarav Sharma",
+      "createdAt": "2026-11-06T06:36:01.117Z",
+      "totalAmount": 2500,
+      "phone": "+91 98111 22233",
+      "settlementStatus": "Pending",
+      "settlementReference": null,
+      "paymentMethod": "Razorpay Gateway",
+      "id": "ORD-7202",
+      "items": [
+        {
+          "id": "prod-1",
+          "title": "Cosmic Bloom Canvas",
+          "price": 2500,
+          "quantity": 1
+        }
+      ],
+      "email": "aarav@example.com",
+      "bankCreditConfirmedAt": null,
+      "paymentVerifiedAt": "2026-11-06T06:36:01.668Z",
+      "paymentId": "pay_test_112233",
+      "paymentDetails": {
+        "method": "Razorpay Gateway",
+        "verifiedAt": "2026-11-06T06:36:01.668Z",
+        "razorpay_order_id": "order_test_998877",
+        "razorpay_payment_id": "pay_test_112233"
+      },
+      "paymentStatus": "Paid",
+      "razorpayOrderId": "order_test_998877",
+      "status": "Confirmed",
+      "updatedAt": "2026-11-06T06:36:01.668Z"
     },
     {
       "address": "New Police Laine\nP3/2",
