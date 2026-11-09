@@ -1472,8 +1472,8 @@ const Admin = {
             </p>
             <div class="form-grid" style="margin-bottom: 0.75rem;">
               <div class="form-group">
-                <label class="form-label" style="font-size: 0.8rem;">Razorpay Key ID (e.g. TVDislMsHzA1OV or rzp_live_...)</label>
-                <input type="text" name="razorpayKeyId" class="form-input" placeholder="e.g. TVDislMsHzA1OV or rzp_live_..." value="${s.razorpayKeyId || ''}" />
+                <label class="form-label" style="font-size: 0.8rem;">Razorpay Key ID (starts with rzp_test_ or rzp_live_)</label>
+                <input type="text" name="razorpayKeyId" class="form-input" placeholder="e.g. rzp_test_TVDislMsHzA1OV or rzp_live_..." value="${s.razorpayKeyId || ''}" />
               </div>
               <div class="form-group">
                 <label class="form-label" style="font-size: 0.8rem;">Razorpay Key Secret</label>
@@ -1690,7 +1690,13 @@ const Admin = {
       instagramSecondary: form.elements['instagramSecondary'].value,
       email: form.elements['email'].value,
       phone: form.elements['phone'].value,
-      razorpayKeyId: form.elements['razorpayKeyId'] ? form.elements['razorpayKeyId'].value.trim() : '',
+      razorpayKeyId: (() => {
+        let k = form.elements['razorpayKeyId'] ? form.elements['razorpayKeyId'].value.trim() : '';
+        if (k && !k.startsWith('rzp_test_') && !k.startsWith('rzp_live_')) {
+          k = `rzp_test_${k}`;
+        }
+        return k;
+      })(),
       razorpayKeySecret: form.elements['razorpayKeySecret'] ? form.elements['razorpayKeySecret'].value.trim() : '',
       upiId: form.elements['upiId'] ? form.elements['upiId'].value.trim() : 'akanksha.lko30@oksbi',
       upiLink: form.elements['upiLink'] ? form.elements['upiLink'].value.trim() : '',

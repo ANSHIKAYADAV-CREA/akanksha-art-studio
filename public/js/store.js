@@ -599,7 +599,7 @@ const Store = {
             name: 'AKAMATOE Art Studio',
             description: `Original Art & Artifacts (${self.cart.length} items)`,
             image: 'https://res.cloudinary.com/wempi94r/image/upload/v1788366558/akanksha-art-studio/spmgiyneusf3wopgn0in.jpg',
-            order_id: rzpRes.orderId && !rzpRes.orderId.startsWith('order_auto_') ? rzpRes.orderId : undefined,
+            order_id: (rzpRes.isLiveGateway && rzpRes.orderId) ? rzpRes.orderId : undefined,
             prefill: {
               name: customerName,
               email: email,

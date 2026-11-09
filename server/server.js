@@ -34,9 +34,22 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Helper to securely retrieve Razorpay configuration from env vars or database settings
 function getRazorpayConfig() {
   const db = readDB();
-  const keyId = (process.env.RAZORPAY_KEY_ID || db.settings?.razorpayKeyId || '').trim();
-  const keySecret = (process.env.RAZORPAY_KEY_SECRET || db.settings?.razorpayKeySecret || '').trim();
+  let keyId = (process.env.RAZORPAY_KEY_ID || db.settings?.razorpayKeyId || '').trim();
+  let keySecret = (process.env.RAZORPAY_KEY_SECRET || db.settings?.razorpayKeySecret || '').trim();
   const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || db.settings?.razorpayWebhookSecret || '').trim();
+
+  // Normalize keyId if prefix was omitted or uppercase 'I' was typed instead of lowercase 'l'
+  if (keyId && !keyId.startsWith('rzp_test_') && !keyId.startsWith('rzp_live_')) {
+    const cleaned = keyId.replace(/^TVDisIMs/, 'TVDislMs');
+    keyId = `rzp_test_${cleaned}`;
+  }
+
+  // If keySecret mistakenly contains a Key ID (starts with rzp_), don't treat it as valid secret
+  if (keySecret && (keySecret.startsWith('rzp_test_') || keySecret.startsWith('rzp_live_'))) {
+    console.warn('⚠️ Notice: razorpayKeySecret has an rzp_ prefix (it looks like a Key ID). Key Secret must be the secret token from Razorpay Dashboard.');
+    keySecret = '';
+  }
+
   return { keyId, keySecret, webhookSecret };
 }
 
@@ -1097,10 +1110,9 @@ app.post('/api/razorpay/create-order', async (req, res) => {
         });
       } catch (err) {
         console.warn('Razorpay SDK order creation notice:', err?.error?.description || err.message);
-        const automatedOrderId = `order_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
         return res.json({
           success: true,
-          orderId: automatedOrderId,
+          orderId: null, // Critical: do NOT pass fake orderId to Razorpay checkout
           amount: amountInPaise,
           currency,
           keyId: keyId,
@@ -1110,16 +1122,15 @@ app.post('/api/razorpay/create-order', async (req, res) => {
       }
     }
 
-    // Fallback automated order identifier if keys are not yet configured on environment
-    const automatedOrderId = `order_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    // Direct mode without pre-created server order (client opens Razorpay directly)
     return res.json({
       success: true,
-      orderId: automatedOrderId,
+      orderId: null, // No server-side order created
       amount: amountInPaise,
       currency,
       keyId: keyId || 'rzp_test_TVDislMsHzA1OV',
       isLiveGateway: false,
-      message: 'Razorpay configured in simulation mode. Configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET for live transactions.'
+      message: 'Razorpay configured in direct mode.'
     });
   } catch (error) {
     console.error('Razorpay create-order route error:', error);
